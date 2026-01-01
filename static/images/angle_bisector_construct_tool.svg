@@ -1,0 +1,13 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<path d="M 130 100 A 70 70 0 0 0 120 50" stroke="rgb(128, 128, 255)" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 115 100 A 50 50 0 0 1 100 140" stroke="rgb(128, 128, 255)" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="170" y2="100" stroke="rgb(128, 200, 255)" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="150" y2="170" stroke="rgb(128, 128, 255)" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="150" y2="30" stroke="rgb(128, 128, 255)" stroke-width="10" stroke-linecap="round"/>
+
+</svg>

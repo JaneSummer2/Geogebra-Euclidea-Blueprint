@@ -1,0 +1,17 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<polygon points="
+50 30, 
+160 130, 
+110 130, 
+130 180, 
+110 180, 
+90 130, 
+50 160" 
+stroke="currentColor" fill="transparent" stroke-width="10"  stroke-linejoin="round"/>
+
+</g>
+
+</svg>

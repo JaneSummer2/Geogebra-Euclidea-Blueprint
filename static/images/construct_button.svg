@@ -1,0 +1,19 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<circle cx="100" cy="100" r="15" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<circle cx="160" cy="50" r="15" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<path d="M 150 37 A 80 80 0 1 0 170 60" stroke="currentColor" stroke-width="10" fill="transparent"/>
+
+<line x1="115" y1="88" x2="145" y2="62" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="175" y1="37" x2="200" y2="15" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="85" y1="114" x2="0" y2="188" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+</g>
+
+</svg>

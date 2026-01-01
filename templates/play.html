@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>EuclideaGeogebraBlueprint</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <!-- 过渡界面 -->
+    <div id="trans-animated">
+        <div id="trans-animated-pictures">
+            <img id="trans-animated-picture2" src="{{ url_for('static', filename='images/1200x630wa.png') }}" alt="Euclidea图标"></img>
+            <img id="trans-animated-picture1" src="{{ url_for('static', filename='images/geogebra_icon.svg') }}" alt="Geogebra图标"></img>
+        </div>
+        <div id="trans-animated-text">
+            <div id="trans-animated-text1-div"><span id="trans-animated-text2">Euclidea</span></div>
+            <div id="trans-animated-text2-div"><span id="trans-animated-text1">Geogebra</span></div>
+            <div id="trans-animated-text3-div"><span id="trans-animated-text3">Blueprint</span></div>
+        </div>
+    </div>
+    
+    <!-- 缩略图 -->
+    {% from "macros/svg_macros.html" import svg_switch_edit_button, svg_close_menu %}
+    <div id="thumbnail" class="thumbnail">
+        <div class="hidden_inf thumbnail-title" style="display: none;">
+            <div class="thumbnail-title-container">
+                <button id="thumbnail-title-switch-hidden">
+                    {{ svg_switch_edit_button() }}
+                </button>
+                <div class="switch_inf" id="title_inf">&emsp;</div>
+                <button id="thumbnail-title-button">
+                    {{ svg_close_menu() }}
+                </button>
+            </div>
+            <div class="full-width"><hr></div>
+        </div>
+        <div class="thumbnail-middle" id="thumbnail-middle"></div>
+        <div class="hidden_inf thumbnail-body" style="display: none;">
+            <div class="thumbnail-bottom-container">
+                <div>goal: </div>
+                <div class="switch_inf" id="bottom_inf">&emsp;</div>
+            </div>
+            <div class="full-width"><hr></div>
+            <div class="thumbnail-body-container">
+                <div class="switch_inf" id="body_inf">&emsp;</div>
+            </div>
+        </div>
+    </div>
+    <div id="masks" class="masks"></div>
+    
+    <!-- 步数显示 -->
+    <div class="moves-layout">
+        <p id="moves"></p>
+    </div>
+
+    <!-- 完成显示 -->
+    <div class="complete-layout" id="complete-layout">
+        <div class="complete-title">
+            Task Completed
+        </div>
+        <div class="complete-body">
+            &#10004;
+        </div>
+    </div>
+    
+    <!-- 菜单 -->
+    <!-- 导入SVG宏 -->
+    {% from "macros/svg_macros.html" import svg_restore_button, svg_redo_button, svg_menu_button %}
+    <div id="container_more">
+        <button id="restore-button" class="more-button-item" data-action="restore">
+            {{ svg_restore_button() }}
+        </button>
+        <button id="redo-button" class="more-button-item" data-action="redo">
+            {{ svg_redo_button() }}
+        </button>
+        <button class="more-button-item" data-action="open-menu">
+            {{ svg_menu_button() }}
+        </button>
+    </div>
+    {% from "macros/svg_macros.html" import svg_restore_transform, svg_clear_canvas, 
+        svg_close_menu, svg_switch_construct, svg_switch_overview, svg_design %}
+    <div id="container_menu">
+        <button class="menu-button-item" data-action="switch-construct">
+            {{ svg_switch_construct() }}
+        </button>
+        <button class="menu-button-item" data-action="switch-overview">
+            {{ svg_switch_overview() }}
+        </button>
+        <button class="menu-button-item" data-action="close-menu">
+            {{ svg_close_menu() }}
+        </button>
+        <button class="menu-button-item" data-action="clear-canvas">
+            {{ svg_clear_canvas() }}
+        </button>
+        <button class="menu-button-item" data-action="design-mode">
+            {{ svg_design() }}
+        </button>
+    </div>
+    
+    <!-- 画布 -->
+    <div id="container_canvas">
+        <canvas id="canvas_id1" width="1500" height="1500"></canvas>
+    </div>
+    
+    <!-- 工具面板 -->
+    {% from "macros/svg_macros.html" import svg_move_tool, svg_point_tool, svg_eraser_tool,
+        svg_line_tool, svg_circle_tool, svg_intersection_tool, svg_parallel_construct %}
+    <div id="toolbarPanel" class="panel">
+        <div id="container_toolbar" class="panel-container row-direction"></div>
+        
+        <div class="floating-bar">
+            <div id="floating-bar-buttons" class="row-direction">
+            </div>
+            
+            <div id="floating-bar-elements" class="row-direction">
+            </div>
+        </div>
+        
+        <div id="mobile-information"></div>
+    </div>
+    
+    <!-- 浏览面板 -->
+    <div id="overviewPanel" class="panel">
+        <div class="panel-container" id="geometry-item-list">
+            <p>几何元素一览</p>
+            <select id="overview-select">
+                <option value="all">All</option>
+                <option value="hidden">Hidden</option>
+            </select>
+            <hr>
+            <div id="container_overview"></div>
+        </div>
+        <div class="item-container" id="geometry-item"></div>
+    </div>
+    
+    <!-- 预定义所有SVG -->
+    {% from "macros/svg_macros.html" import svg_move_view, svg_any_geometry, 
+        svg_perpendicular_construct, svg_perpendicular_bisector_construct,
+        svg_angle_bisector_construct, svg_compass_construct, 
+        svg_middle_point_construct, svg_three_point_circle_construct,
+        svg_ray_tool, svg_line_segment_tool, svg_style_button, 
+        svg_three_point_angle_bisector_construct, svg_three_point_compass_construct,
+        svg_back_button %}
+    <div id="svg-templates" style="display: none;">
+        {% for tool_name in ['move', 'point', 'eraser', 'line', 'circle', 
+            'intersection', "restoreTransform", "clear", "choiceDraw",
+            "moveView", "any", 'parallelLine', 'perpendicularLine',
+            'perpendicularBisector', 'angleBisector', 'compass', 'middlePoint',
+            'threePointCircle', 'ray', 'lineSegment', 'threePointAngleBisector', 
+            'twoPoints', 'style', 'twoPointsMiddlePoint', 'circleCenter', 
+            'threePointCompass', 'compassCopy', 'choicePoint', 'twoLineAngleBisector',
+            "back"] %}
+        <template id="svg-{{ tool_name }}">
+            <!-- 工具 -->
+            {{ svg_move_tool() if tool_name == 'move' }}
+            {{ svg_point_tool() if tool_name == 'point' }}
+            {{ svg_eraser_tool() if tool_name == 'eraser' }}
+            {{ svg_line_tool() if tool_name == 'line' }}
+            {{ svg_ray_tool() if tool_name == 'ray' }}
+            {{ svg_line_segment_tool() if tool_name == 'lineSegment' }}
+            {{ svg_circle_tool() if tool_name == 'circle' }}
+            {{ svg_intersection_tool() if tool_name == 'intersection' }}
+
+            {{ svg_parallel_construct() if tool_name == 'parallelLine' }}
+            {{ svg_perpendicular_construct() if tool_name == 'perpendicularLine' }}
+            {{ svg_perpendicular_bisector_construct() if tool_name == 'perpendicularBisector' }}
+            {{ svg_angle_bisector_construct() if tool_name == 'angleBisector' }}
+            {{ svg_compass_construct() if tool_name == 'compass' }}
+            {{ svg_middle_point_construct() if tool_name == 'middlePoint' }}
+            {{ svg_three_point_circle_construct() if tool_name == 'threePointCircle' }}
+
+            <!-- 工具按钮 -->
+            {{ svg_restore_transform() if tool_name == 'restoreTransform' }}
+            {{ svg_close_menu() if tool_name == 'clear' }}
+            {{ svg_style_button() if tool_name == 'style' }}
+
+            <!-- 工具功能切换 -->
+            {{ svg_move_tool() if tool_name == 'choiceDraw' }}
+            {{ svg_move_view() if tool_name == 'moveView' }}
+            {{ svg_any_geometry() if tool_name == 'any' }}
+            {{ svg_point_tool() if tool_name == 'choicePoint' }}
+            {{ svg_three_point_angle_bisector_construct() if tool_name == 'threePointAngleBisector' }}
+            {{ svg_angle_bisector_construct() if tool_name == 'twoLineAngleBisector' }}
+            {{ svg_middle_point_construct() if tool_name == 'twoPointsMiddlePoint' }}
+            {{ svg_circle_tool() if tool_name == 'circleCenter' }}
+            {{ svg_three_point_compass_construct() if tool_name == 'threePointCompass' }}
+            {{ svg_compass_construct() if tool_name == 'compassCopy' }}
+            
+            <!-- 其它 -->
+            {{ svg_back_button() if tool_name == 'back' }}
+        </template>
+        {% endfor %}
+    </div>
+
+    <!-- script src="https://cdnjs.cloudflare.com/ajax/libs/fraction.js/4.0.12/fraction.min.js"></script -->
+    <!--script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 初始化 vConsole
+        var vConsole = new VConsole();
+        // 之后，您就可以像在电脑上一样使用 console.log() 了
+        console.log('Hello, vConsole!');
+    </script-->
+    <!-- 模板中定义全局变量存储静态路径 -->
+    <script>
+        const STATIC_URL = "{{ url_for('static', filename='') }}";  // 生成 "/static/"
+    </script>
+    <script src="{{ url_for('static', filename='js/toolsFunction.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toolTemplate.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storageLoad.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/editToolBag.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/geometryToolBag.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/constructToolBag.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/geometry.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/canvas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toolPlayPage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/geometryItemPlayPage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/playPage.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<path d="M 130 100 A 70 70 0 0 0 120 50" stroke="rgb(128, 128, 255)" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 115 100 A 50 50 0 0 1 100 140" stroke="rgb(128, 128, 255)" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="50" y1="100" x2="170" y2="100" stroke="rgb(128, 200, 255)" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="45" y1="110" x2="140" y2="165" stroke="rgb(128, 128, 255)" stroke-width="10" stroke-linecap="round" stroke-dasharray="20,20"/>
+
+<line x1="45" y1="90" x2="140" y2="35" stroke="rgb(128, 128, 255)" stroke-width="10" stroke-linecap="round" stroke-dasharray="20,20"/>
+
+<circle cx="30" cy="100" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<circle cx="150" cy="30" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<circle cx="150" cy="170" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+</svg>

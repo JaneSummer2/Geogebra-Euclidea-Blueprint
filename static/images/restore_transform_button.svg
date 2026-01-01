@@ -1,0 +1,29 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<circle cx="100" cy="100" r="15" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<line x1="50" y1="100" x2="80" y2="100" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="120" y1="100" x2="150" y2="100" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="100" y1="50" x2="100" y2="80" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="100" y1="120" x2="100" y2="150" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<path d="M 150 50 A 70 70 0 0 1 150 150" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 50 50 A 70 70 0 0 0 50 150" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="50" y1="50" x2="50" y2="75" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="50" y1="50" x2="25" y2="60" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="150" y1="150" x2="150" y2="125" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="150" y1="150" x2="175" y2="140" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+</g>
+
+</svg>

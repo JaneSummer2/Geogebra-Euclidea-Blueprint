@@ -1,0 +1,15 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<path d="M 115 20 A 80 80 0 0 0 35 145" stroke="rgb(128, 200, 255)" stroke-width="10" fill="transparent"/>
+
+<path d="M 55 165 A 80 80 0 0 0 150 160" stroke="rgb(128, 200, 255)" stroke-width="10" fill="transparent"/>
+
+<path d="M 170 140 A 80 80 0 0 0 140 30" stroke="rgb(128, 200, 255)" stroke-width="10" fill="transparent"/>
+
+<circle cx="125" cy="25" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<circle cx="45" cy="155" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<circle cx="160" cy="150" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+</svg>

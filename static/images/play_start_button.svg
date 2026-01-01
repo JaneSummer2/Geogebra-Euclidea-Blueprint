@@ -1,0 +1,10 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<polygon points="
+50 30, 
+160 100, 
+50 170, 
+"
+stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"  stroke-linejoin="round"/>
+
+</svg>

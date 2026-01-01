@@ -1,0 +1,17 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<polygon points="
+60 100, 
+120 40, 
+160 80, 
+100 140, 
+60 140" 
+stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"  stroke-linejoin="round"/>
+
+<line x1="60" y1="100" x2="100" y2="140" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="100" y1="60" x2="140" y2="100" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="40" y1="160" x2="160" y2="160" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+</svg>

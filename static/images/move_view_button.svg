@@ -1,0 +1,23 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<line x1="100" y1="30" x2="100" y2="170" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="170" y2="100" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="50" y2="80" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="30" y1="100" x2="50" y2="120" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="170" y1="100" x2="150" y2="120" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="170" y1="100" x2="150" y2="80" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="100" y1="30" x2="80" y2="50" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="100" y1="30" x2="120" y2="50" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="100" y1="170" x2="80" y2="150" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<line x1="100" y1="170" x2="120" y2="150" stroke='rgb(128, 128, 255)' stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+</svg>

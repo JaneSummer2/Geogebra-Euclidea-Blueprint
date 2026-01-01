@@ -1,0 +1,11 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<circle cx="40" cy="100" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<circle cx="160" cy="100" r="15" stroke="rgb(128, 128, 255)" fill="transparent" stroke-width="10"/>
+
+<line x1="60" y1="100" x2="140" y2="100" stroke="rgb(128, 128, 255)" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="100" y1="30" x2="100" y2="170" stroke="rgb(128, 200, 255)" stroke-width="10" stroke-linecap="round"/>
+
+</svg>

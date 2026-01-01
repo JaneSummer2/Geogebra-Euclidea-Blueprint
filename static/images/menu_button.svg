@@ -1,0 +1,13 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<rect x="70" y="30" width="60" height="60" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linejoin="round"/>
+
+<rect x="30" y="110" width="60" height="60" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linejoin="round"/>
+
+<rect x="110" y="110" width="60" height="60" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linejoin="round"/>
+
+</g>
+
+</svg>

@@ -1,0 +1,17 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<circle cx="100" cy="85" r="15" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<path d="M 115 100 A 200 200 0 0 1 160 180" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 85 72 A 200 200 0 0 0 20 40" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 85 100 A 200 200 0 0 0 40 180" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<path d="M 115 72 A 200 200 0 0 1 180 40" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+</g>
+
+</svg>

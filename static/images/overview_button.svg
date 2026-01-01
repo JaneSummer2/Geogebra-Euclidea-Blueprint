@@ -1,0 +1,17 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g color="rgb(128, 128, 255)">
+
+<line x1="50" y1="100" x2="80" y2="30" stroke="currentColor" stroke-width="10" fill="transparent" stroke-linecap="round"/>
+
+<circle cx="120" cy="70" r="25" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<polyline points="30 80, 30 170, 170 170, 170 80" stroke="currentColor" fill="transparent" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+<line x1="30" y1="150" x2="170" y2="150" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+<line x1="30" y1="130" x2="170" y2="130" stroke="currentColor" fill="transparent" stroke-width="10"/>
+
+</g>
+
+</svg>

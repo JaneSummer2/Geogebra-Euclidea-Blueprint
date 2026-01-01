@@ -1,0 +1,17 @@
+<svg width="200" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<polyline points="30 50, 120 50, 120 130" stroke="rgb(128, 128, 128)" fill="transparent" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+<line x1="120" y1="130" x2="100" y2="100" stroke="rgb(128, 128, 128)" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<line x1="120" y1="130" x2="140" y2="100" stroke="rgb(128, 128, 128)" fill="transparent" stroke-width="10" stroke-linecap="round"/>
+
+<polyline points="70 100, 70 170, 170 170, 170 100" stroke="rgb(128, 128, 128)" fill="transparent" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+<line x1="70" y1="150" x2="170" y2="150" stroke="rgb(128, 128, 128)" fill="transparent" stroke-width="10"/>
+
+
+
+<rect x="0" y="0" width="200" height="200" stroke="black" fill="transparent" stroke-width="5"/>
+
+</svg>
