@@ -1129,8 +1129,8 @@ class ToolsFunction {
         const [x1, y1] = point1.getCoordinate();
         const [x2, y2] = point2.getCoordinate();
         
-        if (x1 - x2 > 1e-10) return false;
-        if (y1 - x2 > 1e-10) return false;
+        if (Math.abs(x1 - x2) > 1e-10) return false; // 注意绝对值
+        if (Math.abs(y1 - y2) > 1e-10) return false;
         return true;
     }
 
@@ -1154,10 +1154,10 @@ class ToolsFunction {
         const p4 = {x: x4, y: y4};
         const flagValue1 = ToolsFunction.pointToLineDistance(p1, p2, p3);
         if (!flagValue1.flag) return false;
-        const distance1 = flagValue1.value;
+        const distance1 = Math.abs(flagValue1.value);
         const flagValue2 = ToolsFunction.pointToLineDistance(p1, p2, p4);
         if (!flagValue2.flag) return false;
-        const distance2 = flagValue2.value;
+        const distance2 = Math.abs(flagValue2.value);
 
         let flagCount = 0;
         if (distance1 < 1e-10) flagCount++;
@@ -1183,11 +1183,11 @@ class ToolsFunction {
         const [x3, y3] = coordList2[0];
         const [x4, y4] = coordList2[1];
         
-        if (x1 - x3 > 1e-10) return false;
-        if (y1 - y3 > 1e-10) return false;
+        if (Math.abs(x1 - x3) > 1e-10) return false;
+        if (Math.abs(y1 - y3) > 1e-10) return false;
         const distance1 = Math.hypot((x2 - x1), (y2 - y1));
         const distance2 = Math.hypot((x4 - x3), (y4 - y3));
-        if (distance1 - distance2 > 1e-10) return false;
+        if (Math.abs(distance1 - distance2) > 1e-10) return false;
         return true;
     }
 }

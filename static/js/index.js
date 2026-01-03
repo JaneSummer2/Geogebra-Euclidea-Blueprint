@@ -61,7 +61,7 @@ geometryManager.transform = transform;
 geometryManager.geometryStyle = geometryStyle;
 const storageManager = new StorageManager();
 storageManager.setStatus(true);
-storageManager.append({});
+storageManager.append(geometryManager.toStorage());
 
 let geometryElementLists = {
     hidden: new Set(),
@@ -562,7 +562,7 @@ function menuChoice(e) {
         if (result) {
             clearCanvas();
             storageManager.clear();
-            storageManager.append({});
+            storageManager.append(geometryManager.toStorage());
             refreshStorageButton();
             clearLists();
         }
@@ -625,8 +625,8 @@ function dataTransfer() {
     sessionStorage.setItem('elements', JSON.stringify(elements));
 
     // 构造记录
-    //const constructRecordJSON = storageManager.serialization();
-    //sessionStorage.setItem('constructRecord', constructRecordJSON);
+    const constructRecordJSON = storageManager.serialization();
+    sessionStorage.setItem('constructRecord', constructRecordJSON);
 }
 
 
@@ -950,8 +950,9 @@ function dataLoad() {
     }
 
     // 构造记录
-    //const constructRecordJSON = sessionStorage.getItem('constructRecord');
-    //if (constructRecordJSON) storageManager.deserialization(constructRecordJSON);
+    const constructRecordJSON = sessionStorage.getItem('constructRecord');
+    if (constructRecordJSON) storageManager.deserialization(constructRecordJSON);
+    refreshStorageButton();
     
     function deserialization(elementDict) {
         const type = elementDict.type;

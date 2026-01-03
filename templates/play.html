@@ -78,7 +78,8 @@
         </button>
     </div>
     {% from "macros/svg_macros.html" import svg_restore_transform, svg_clear_canvas, 
-        svg_close_menu, svg_switch_construct, svg_switch_overview, svg_design %}
+        svg_close_menu, svg_switch_construct, svg_switch_overview, svg_design,
+        svg_explore, svg_switch_edit_button %}
     <div id="container_menu">
         <button class="menu-button-item" data-action="switch-construct">
             {{ svg_switch_construct() }}
@@ -94,6 +95,12 @@
         </button>
         <button class="menu-button-item" data-action="design-mode">
             {{ svg_design() }}
+        </button>
+        <button class="menu-button-item" data-action="switch-record">
+            {{ svg_switch_edit_button() }}
+        </button>
+        <button class="menu-button-item" id="menu-button-item" data-action="explore-mode">
+            {{ svg_explore() }}
         </button>
     </div>
     
@@ -121,6 +128,20 @@
     
     <!-- 浏览面板 -->
     <div id="overviewPanel" class="panel">
+        <div class="panel-container" id="geometry-item-list">
+            <p>几何元素一览</p>
+            <select id="overview-select">
+                <option value="all">All</option>
+                <option value="hidden">Hidden</option>
+            </select>
+            <hr>
+            <div id="container_overview"></div>
+        </div>
+        <div class="item-container" id="geometry-item"></div>
+    </div>
+
+    <!-- 记录面板 -->
+    <div id="recordPanel" class="panel">
         <div class="panel-container" id="geometry-item-list">
             <p>几何元素一览</p>
             <select id="overview-select">

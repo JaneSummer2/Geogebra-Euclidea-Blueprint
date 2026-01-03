@@ -434,6 +434,10 @@ textarea {
     stroke: rgb(128, 128, 128);
 }
 
+.menu-button-item.active .svg-icon {
+    stroke: rgb(255, 215, 0);
+}
+
 .transparent {
     background-color: transparent;
     position: absolute;
@@ -633,7 +637,7 @@ textarea {
     justify-content: center;
     padding: 0; /* 默认值陷阱！ */
     transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1;
+    z-index: 10;
 }
 
 .complete-layout.trans {

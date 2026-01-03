@@ -1420,20 +1420,80 @@ class GeometryElementManager {
     
     /**
      * 存储
-     * @returns {{id: Object}}
+     * @returns {dict[]}
      */
     toStorage() {
         this.deleteAllCache();
-        const copy = Object.assign({}, this.repository);
+        const copy = [];
+        for (const value of Object.values(this.repository)) {
+            copy.push(value.getDict());
+        }
         return copy;
     }
     
     /**
      * 加载存储
-     * @param {{id: Object}} elements
+     * @param {dict[]} elements
      */
     loadStorage(elements) {
-        this.deleteAllCache();
-        this.repository = elements;
+        this.deleteAll();
+
+        // 1.反序列化为元素
+        for (const item of elements) {
+            const element = deserialization(item);
+            this.addObject(element);
+        }
+
+        // 2.添加元素间连接
+        for (const item of elements) {
+            const bases = item.base;
+            const basesType = bases.type;
+
+            if (basesType === 'none') continue;
+            const id = item.id;
+            const currentElement = this.get(id);
+            const currentElementType = item.type;
+            const objectList = [];
+            bases.basesId.forEach((id) => {
+                objectList.push(this.get(id));
+            });
+            if (currentElementType === 'point') {
+                currentElement.modifyBase(basesType, objectList, bases.value);
+                objectList.forEach((item) => {
+                    item.addSuperstructure(currentElement);
+                });
+            }else if (currentElementType === 'line' || currentElementType === 'circle') {
+                currentElement.modifyDefine(basesType, objectList, bases.value);
+            }
+        }
+
+        function deserialization(elementDict) {
+            const type = elementDict.type;
+            const id = elementDict.id;
+            const name = elementDict.name;
+            const visible = elementDict.visible;
+            const valid = elementDict.valid;
+            const color = elementDict.color;
+            const showName = elementDict.showName;
+            
+            let element;
+            if (type === 'point') {
+                const x = elementDict.x;
+                const y = elementDict.y;
+                element = new Point(id, x, y);
+            }else if (type === 'line') {
+                element = new Line(id);
+                element.modifyDrawType(elementDict.drawType);
+            }else if (type === 'circle') {
+                element = new Circle(id);
+            }
+
+            element.modifyName(name);
+            element.modifyVisible(visible);
+            element.modifyValid(valid);
+            element.modifyShowName(showName);
+            element.modifyColor(color);
+            return element;
+        }
     }
 }

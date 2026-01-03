@@ -23,23 +23,23 @@ class StorageManager {
     
     /**
      * 恢复
-     * @returns {{id: Object}}
+     * @returns {any[]}
      */
     restore() {
         if (this.pointer === 0) return;
         this.pointer--;
-        const copy = Object.assign({}, this.repository[this.pointer]);
+        const copy = [...this.repository[this.pointer]];
         return copy;
     }
     
     /**
      * 重做
-     * @returns {{id: Object}}
+     * @returns {any[]}
      */
     redo() {
         if (this.pointer === this.repository.length) return;
         this.pointer++;
-        const copy = Object.assign({}, this.repository[this.pointer]);
+        const copy = [...this.repository[this.pointer]];
         return copy;
     }
     
@@ -88,7 +88,7 @@ class StorageManager {
         dict.repository = this.repository;
         dict.pointer = this.pointer;
         dict.status = this.status;
-        const json = stringify(dict);
+        const json = JSON.stringify(dict);
         return json;
     }
 
@@ -97,7 +97,7 @@ class StorageManager {
      * @param {string} json 
      */
     deserialization(json) {
-        const dict = parse(json);
+        const dict = JSON.parse(json);
         this.repository = dict.repository;
         this.pointer = dict.pointer;
         this.status = dict.status;

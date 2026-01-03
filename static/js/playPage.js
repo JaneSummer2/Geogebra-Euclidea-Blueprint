@@ -46,11 +46,19 @@ let geometryStyle = {
 };
 
 // 几何对象管理器
-const geometryManager = new GeometryElementManager();
-geometryManager.transform = transform;
-geometryManager.geometryStyle = geometryStyle;
-const storageManager = new StorageManager();
-const movesStorageManager = new MovesStorageManager();
+const geometryManagerResult = new GeometryElementManager();
+const geometryManagerExplore = new GeometryElementManager();
+let geometryManager = geometryManagerResult;
+geometryManagerResult.transform = transform;
+geometryManagerResult.geometryStyle = geometryStyle;
+geometryManagerExplore.transform = transform;
+geometryManagerExplore.geometryStyle = geometryStyle;
+const storageManagerResult = new StorageManager();
+const movesStorageManagerResult = new MovesStorageManager();
+const storageManagerExplore = new StorageManager();
+const movesStorageManagerExplore = new MovesStorageManager();
+let storageManager = storageManagerResult;
+let movesStorageManager = movesStorageManagerResult;
 const geometryElementLists = {
     hidden: new Set(),
     initial: new Set(),
@@ -59,7 +67,8 @@ const geometryElementLists = {
     result: new Set(),
     explore: new Set(),
 };
-geometryManager.geometryElementLists = geometryElementLists;
+geometryManagerResult.geometryElementLists = geometryElementLists;
+geometryManagerExplore.geometryElementLists = geometryElementLists;
 
 // 工具
 const tools = {
@@ -158,6 +167,35 @@ function refreshMovesCounterByRestore(moves, flag) {
         movesCounter.l = movesL + moves.l;
     }
     movesCounterDE.innerText = `${movesL}L ${movesE}E`;
+}
+
+/* 刷新步数 */
+function refreshMovesCounter() {
+    const oriMoves = movesStorageManager.get();
+    movesCounterDE.innerText = `${oriMoves.l}L ${oriMoves.e}E`;
+}
+
+
+
+let recordStorage; // recordId:string[]
+/**
+ * 加载存储记录
+ */
+function loadRecordStorage() {
+    const recordStorageJSON = localStorage.getItem('recordStorage');
+    if (!recordStorageJSON) return;
+    recordStorage = JSON.parse(recordStorageJSON);
+}
+
+// 加载存储记录DE
+function loadRecordStorageDE() {
+    //
+}
+
+// 存储记录操作
+function recordOperate(operate, value = null) {
+    // 增加
+    // 
 }
 
 
@@ -532,13 +570,21 @@ function switchPanel(panel) {
     panelState = panel;
     // 样式类型
     document.getElementById(panel).style.display = "flex";
-    if (panel === "overviewPanel") {
-        Object.values(tools).forEach((item) => item?.clear?.());
+    if (panel === "recordPanel") {
+        Object.values(tools).forEach((item) => item.clear?.());
+        refreshToolFloating();
+        
+        tool = "move";
+        drawContent();
+        loadRecordStorageDE();
+    }else if (panel === "overviewPanel") {
+        Object.values(tools).forEach((item) => item.clear?.());
         refreshToolFloating();
         
         tool = "move";
         drawContent();
         loadGeometryElements();
+        if (exploreFlag) exploreMode();
     }else if (panel === "toolbarPanel") {
         choiceToolMenu("euclidea");
         refreshToolFloating();
@@ -578,8 +624,10 @@ function morebarChoice(e) {
         openMenu();
     }else if (action === "restore") {
         restoreStorage();
+        resultVerify();
     }else if (action === "redo") {
         redoStorage();
+        resultVerify();
     }
 }
 
@@ -609,6 +657,54 @@ function menuChoice(e) {
         switchPanel("overviewPanel");
     }else if (action === "design-mode") {
         designMode();
+    }else if (action === "switch-record") {
+        switchPanel("recordPanel");
+    }else if (action === "explore-mode") {
+        exploreMode();
+    }
+}
+
+let exploreFlag = false;
+/**
+ * 探索模式
+ */
+function exploreMode() {
+    if (exploreFlag) {
+        exploreFlag = false;
+        // 切换几何对象管理器
+        geometryManager = geometryManagerResult;
+        storageManager = storageManagerResult;
+        movesStorageManager = movesStorageManagerResult;
+        // 按钮变色
+        const buttonDE = document.getElementById('menu-button-item');
+        buttonDE.classList.remove('active');
+        // 几何对象隐藏
+        const ids = geometryElementLists.explore;
+        ids.forEach((id) => {
+            const element = geometryManager.get(id);
+            element.modifyVisible(false);
+        });
+        drawContent();
+        refreshStorageButton();
+        refreshMovesCounter();
+    }else{
+        exploreFlag = true;
+        // 切换几何对象管理器
+        geometryManager = geometryManagerExplore;
+        storageManager = storageManagerExplore;
+        movesStorageManager = movesStorageManagerExplore;
+        // 按钮变色
+        const buttonDE = document.getElementById('menu-button-item');
+        buttonDE.classList.add('active');
+        // 几何对象显示
+        const ids = geometryElementLists.explore;
+        ids.forEach((id) => {
+            const element = geometryManager.get(id);
+            element.modifyVisible(true);
+        });
+        drawContent();
+        refreshStorageButton();
+        refreshMovesCounter();
     }
 }
 
@@ -721,6 +817,7 @@ const infDict = {
     "switch-overview": {title: "几何元素一览面板", context: "可以查看所有的元素，快速编辑"},
     "clear-canvas": {title: "清空画布", context: ""},
     "design-mode": {title: "设计模式", context: "切换到几何设计模式"},
+    "explore-mode": {title: "探索模式", context: "显示所求几何对象，方便研究"},
     "general-bar": {title: "通用工具栏", context: ""},
     "point-bar": {title: "点工具栏", context: ""},
     "line-bar": {title: "直线工具栏", context: ""},
@@ -858,7 +955,8 @@ function loadGeometryElementsStorage() {
         // 1.反序列化为元素
         elements.forEach((item) => {
             const element = deserialization(item);
-            geometryManager.addObject(element);
+            geometryManagerResult.addObject(element);
+            geometryManagerExplore.addObject(element);
             if (geometryElementLists.initial.has(item.id)) {
                 element.modifyColor("#191919");
             }else if (geometryElementLists.movepoints.has(item.id)) {
@@ -903,6 +1001,7 @@ function loadGeometryElementsStorage() {
         const id = elementDict.id;
         const name = elementDict.name;
         const valid = elementDict.valid;
+        const color = elementDict.color;
         
         let element;
         if (type === 'point') {
@@ -916,23 +1015,27 @@ function loadGeometryElementsStorage() {
             element = new Circle(id);
         }
 
-        element.modifyName(name);
         if (geometryElementLists.initial.has(id)) {
             element.modifyVisible(true);
         }else{
             element.modifyVisible(false);
         }
-        element.modifyValid(valid);
         if (geometryElementLists.name.has(id)) {
             element.modifyShowName(true);
         }else{
             element.modifyShowName(false);
         }
-        
+        element.modifyName(name);
+        element.modifyValid(valid);
+        element.modifyColor(color);
         return element;
     }
 }
 
+/**
+ * 几何对象同一判定
+ * @returns {Promise} bool
+ */
 function resultVerifyFunction() {
     return new Promise((resolve) => {
         let count = 0;
@@ -948,7 +1051,9 @@ function resultVerifyFunction() {
                     const id2 = element.getId();
                     if (id === id2) continue;
                     const bool = ToolsFunction.pointEquative(resultElement, element);
-                    if (bool) count++;
+                    if (bool) {
+                        count++;
+                    }
                 }
             }else if (resultType === 'line') {
                 const elements = geometryManager.getAllByOrder();
@@ -958,7 +1063,9 @@ function resultVerifyFunction() {
                     const id2 = element.getId();
                     if (id === id2) continue;
                     const bool = ToolsFunction.lineEquative(resultElement, element);
-                    if (bool) count++;
+                    if (bool) {
+                        count++;
+                    }
                 }
             }else if (resultType === 'circle') {
                 const elements = geometryManager.getAllByOrder();
@@ -968,7 +1075,9 @@ function resultVerifyFunction() {
                     const id2 = element.getId();
                     if (id === id2) continue;
                     const bool = ToolsFunction.circleEquative(resultElement, element);
-                    if (bool) count++;
+                    if (bool) {
+                        count++;
+                    }
                 }
             }
         });
@@ -980,11 +1089,19 @@ function resultVerifyFunction() {
     });
 }
 
+/**
+ * 所求验证
+ */
 async function resultVerify() {
+    if (exploreFlag) return;
     const bool = await resultVerifyFunction();
     if (bool) {
         // 触发成功事件
         const event = new CustomEvent("success");
+        window.dispatchEvent(event);
+    }else{
+        // 触发未成功事件
+        const event = new CustomEvent("unsuccess");
         window.dispatchEvent(event);
     }
 }
@@ -1012,6 +1129,27 @@ function success() {
     setTimeout(() => {
         pop.classList.remove('trans');
     }, 5000);
+
+    // 重绘
+    drawContent();
+}
+
+window.addEventListener("unsuccess", unsuccess);
+/**
+ * 未完成几何构造
+ */
+function unsuccess() {
+    // 步数字体变化
+    const moves = document.getElementById('moves');
+    moves.style.color = '#000000';
+    moves.style.setProperty('font-weight', 'normal');
+
+    // 几何对象隐藏
+    const resultIds = geometryElementLists.result;
+    resultIds.forEach((id) => {
+        const element = geometryManager.get(id);
+        element.modifyVisible(false);
+    });
 
     // 重绘
     drawContent();
@@ -1047,8 +1185,13 @@ function DOMLoaded() {
     switchPanel("toolbarPanel");
     refreshStorageButton();
     playStartDataLoad();
-    storageManager.setStatus(true);
-    storageManager.append(geometryManager.getAllByOrder());
-    movesStorageManager.setStatus(true);
-    movesStorageManager.append(movesCounter);
+    storageManagerResult.setStatus(true);
+    storageManagerExplore.setStatus(true);
+    storageManagerResult.append(geometryManager.toStorage());
+    storageManagerExplore.append(geometryManager.toStorage());
+    movesStorageManagerResult.setStatus(true);
+    movesStorageManagerExplore.setStatus(true);
+    movesStorageManagerResult.append(movesCounter);
+    movesStorageManagerExplore.append(movesCounter);
+    loadRecordStorage();
 }
