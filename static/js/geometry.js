@@ -1441,7 +1441,20 @@ class GeometryElementManager {
         // 1.反序列化为元素
         for (const item of elements) {
             const element = deserialization(item);
+            const id = element.getId();
+            const color = element.getColor();
             this.addObject(element);
+            if (this.geometryElementLists.initial.has(id)) {
+                element.modifyColor("#191919");
+            }else if (this.geometryElementLists.movepoints.has(item.id)) {
+                element.modifyColor('#0099ff');
+            }else if (this.geometryElementLists.result.has(item.id)) {
+                element.modifyColor('#ffd700');
+            }else if (this.geometryElementLists.explore.has(item.id)) {
+                element.modifyColor('#ffd700');
+            }else{
+                element.modifyColor(color);
+            }
         }
 
         // 2.添加元素间连接

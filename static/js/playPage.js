@@ -687,6 +687,7 @@ function exploreMode() {
         drawContent();
         refreshStorageButton();
         refreshMovesCounter();
+        resultVerify();
     }else{
         exploreFlag = true;
         // 切换几何对象管理器
@@ -936,7 +937,11 @@ function playStartDataLoad() {
     if (geometryElementListsJSON) {
         const geometryElementListsLoad = JSON.parse(geometryElementListsJSON);
         for (const [key, value] of Object.entries(geometryElementListsLoad)) {
-            geometryElementLists[key] = new Set(value);
+            if (key === 'explore' && value.length === 0) {
+                geometryElementLists[key] = new Set(geometryElementListsLoad.result);
+            }else{
+                geometryElementLists[key] = new Set(value);
+            }
         }
     }
 
@@ -1038,7 +1043,7 @@ function loadGeometryElementsStorage() {
  */
 function resultVerifyFunction() {
     return new Promise((resolve) => {
-        let count = 0;
+        const result = new Set();
         const length = geometryElementLists.result.size;
         geometryElementLists.result.forEach((id) => {
             const resultElement = geometryManager.get(id);
@@ -1048,11 +1053,9 @@ function resultVerifyFunction() {
                 for (const element of elements) {
                     const type = element.getType();
                     if (type !== 'point') continue;
-                    const id2 = element.getId();
-                    if (id === id2) continue;
                     const bool = ToolsFunction.pointEquative(resultElement, element);
                     if (bool) {
-                        count++;
+                        result.add(id);
                     }
                 }
             }else if (resultType === 'line') {
@@ -1064,7 +1067,7 @@ function resultVerifyFunction() {
                     if (id === id2) continue;
                     const bool = ToolsFunction.lineEquative(resultElement, element);
                     if (bool) {
-                        count++;
+                        result.add(id);
                     }
                 }
             }else if (resultType === 'circle') {
@@ -1076,12 +1079,12 @@ function resultVerifyFunction() {
                     if (id === id2) continue;
                     const bool = ToolsFunction.circleEquative(resultElement, element);
                     if (bool) {
-                        count++;
+                        result.add(id);
                     }
                 }
             }
         });
-        if (count === length) {
+        if (result.size === length) {
             resolve(true);
         }else{
             resolve(false);
