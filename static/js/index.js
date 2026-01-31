@@ -497,6 +497,12 @@ function switchPanel(panel) {
         tool = "move";
         drawContent();
         loadGeometryElements();
+    }else if (panel === "filePanel") {
+        Object.values(tools).forEach((item) => item?.clear?.());
+        refreshToolFloating();
+        
+        tool = "move";
+        drawContent();
     }else if (panel === "toolbarPanel") {
         choiceToolMenu("general-bar");
         refreshToolFloating();
@@ -572,6 +578,8 @@ function menuChoice(e) {
         switchPanel("toolbarPanel");
     }else if (action === "switch-overview") {
         switchPanel("overviewPanel");
+    }else if (action === "switch-file") {
+        switchPanel("filePanel");
     }else if (action === "play-start") {
         playStart();
     }
@@ -627,6 +635,145 @@ function dataTransfer() {
     // 构造记录
     const constructRecordJSON = storageManager.serialization();
     sessionStorage.setItem('constructRecord', constructRecordJSON);
+}
+
+
+
+/**
+ * 文件上传栏点击
+ * @param {*} event 
+ */
+function filePanelClick(event) {
+    const action = event.target.getAttribute("data-action");
+    if (action === 'file-load') {
+        const inputDE = document.createElement('input');
+        inputDE.setAttribute('type', 'file');
+        inputDE.setAttribute('accept', '.gmt');
+        inputDE.addEventListener('change', fileLoad);
+        inputDE.click();
+
+        setTimeout(() => {
+            inputDE.remove();
+        }, 100);
+
+    }else if (action === 'file-down') {
+        alert("sb")
+    }else if (action === 'file-part-down') {
+        alert("sb")
+    }
+}
+
+/**
+ * 文件上传
+ * @param {*} event 
+ */
+async function fileLoad(event) {
+    // 1. 获取选中的文件
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 2. 创建FormData对象并添加文件
+    const formData = new FormData();
+    formData.append('userFile', file); // 'userFile'应与后端接口参数名匹配
+
+    // 3. 使用fetch API发送请求
+    try {
+        const response = await fetch('/file_load', { // 请替换为实际的上传地址
+            method: 'POST',
+            body: formData
+            // 注意：使用fetch时，不要手动设置Content-Type头，浏览器会自动设置为multipart/form-data
+        });
+
+        if (!response.ok) throw new Error('未接收到返回值');
+
+        const flagData = await response.json();
+        const flag = flagData[0];
+        if (!flag) {
+            throw new Error(flagData[1]);
+        }
+        const localData = flagData[1];
+        console.log(localData);
+        const localEvent = new CustomEvent('file load success', {
+            detail: {data: localData}
+        });
+        document.dispatchEvent(localEvent);
+
+    }catch(error) {
+        console.error('文件解析失败：', error);
+        const localEvent = new CustomEvent('file load error', {
+            detail: {message: error}
+        });
+        document.dispatchEvent(localEvent);
+    }
+}
+
+const fileProcessInformation = document.getElementById('file-process-information');
+document.addEventListener('file load success', fileLoadSuccess);
+document.addEventListener('file load error', fileLoadError);
+
+/**
+ * 文件加载成功
+ * @param {*} event 
+ */
+function fileLoadSuccess(event) {
+    fileProcessInformation.textContent = '';
+    fileProcessInformation.classList.add('active');
+    fileProcessInformation.textContent = '加载成功';
+    setTimeout(() => {
+        fileProcessInformation.classList.remove("active");
+    }, 3000);
+}
+
+/**
+ * 文件加载失败
+ * @param {*} event 
+ */
+function fileLoadError(event) {
+    fileProcessInformation.innerHTML = '';
+    fileProcessInformation.classList.add('active');
+
+    const text1DE = document.createElement('div');
+    text1DE.textContent = '加载失败';
+    fileProcessInformation.appendChild(text1DE);
+
+    const text2DE = document.createElement('div');
+    text2DE.textContent = '点击查看详细内容';
+    text2DE.setAttribute('class', 'text2DE');
+    text2DE.addEventListener('click', openFileImformationModal);
+    const modal = document.getElementById('file-information-container');
+    modal.textContent = event?.detail?.message;
+    fileProcessInformation.appendChild(text2DE);
+
+    setTimeout(() => {
+        fileProcessInformation.classList.remove("active");
+    }, 5000);
+}
+
+/**
+ * 打开文件加载信息
+ * @param {*} event 
+ */
+function openFileImformationModal(event) {
+    const modal = document.getElementById('file-information');
+    const masks = document.getElementById('file-information-masks');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    masks.style.display = 'block';
+}
+
+document.getElementById('file-information-masks').addEventListener('click', closeFileImformationModal);
+document.getElementById('file-information-button').addEventListener('click', closeFileImformationModal);
+
+/**
+ * 关闭文件加载信息
+ * @param {*} event 
+ */
+function closeFileImformationModal(event) {
+    const modal = document.getElementById('file-information');
+    const masks = document.getElementById('file-information-masks');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    masks.style.display = 'none';
 }
 
 
@@ -1007,6 +1154,7 @@ function DOMLoaded() {
     document.getElementById("container_menu").addEventListener("click", menuChoice);
     document.getElementById("container_overview").addEventListener("click", selectElementByOverview);
     document.getElementById("geometry-item").addEventListener("click", geometryItemClick);
+    document.getElementById("filePanel").addEventListener("click", filePanelClick);
     // 初始化
     updateLayout();
     resizeCanvas();

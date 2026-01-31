@@ -448,6 +448,135 @@ textarea {
 
 
 
+.file-title {
+    width: 100%;
+    background-color: rgb(200, 200, 200);
+}
+
+.file-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    gap: 15px;
+}
+
+.file-zone {
+    border-radius: 15px;
+    cursor: pointer;
+    border: 4px dashed rgb(128, 128, 255);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px;
+}
+
+.file-trans-icon {
+    width: 60px;
+    height: 60px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 5px;
+    cursor: pointer;
+    border: none; /* 去边框 */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* 默认值陷阱！ */
+    pointer-events: none;
+}
+
+.file-trans-icon .svg-icon {
+    stroke: rgb(128, 128, 255);
+}
+
+.file-trans-text {
+    line-height: 0.2;
+    pointer-events: none;
+}
+
+#file-process-information {
+    bottom: 5px;
+    left: 5px;
+    position: absolute;
+    background-color: #80caff;
+    transition: all 0.5s ease;
+    visibility: hidden;
+    opacity: 0;
+    display: inline-flex;
+    gap: 10px;
+}
+
+#file-process-information.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.text2DE {
+    cursor: pointer;
+}
+
+.text2DE:hover {
+    color: #0095FF;
+}
+
+.file-information {
+    position: absolute;
+    top: 50vh;
+    left: 50vw;
+    transform: translate(-50%, -50%);
+    background-color: rgb(240, 240, 240);
+    transition: all 0.5s ease;
+    visibility: hidden;
+    opacity: 0;
+    display: none;
+    gap: 10px;
+    max-height: 80vh;
+    max-width: 70vw;
+    z-index: 9;
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+}
+
+.file-information.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.file-information-container {
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.file-information-masks {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 8;
+}
+
+#file-information-button {
+    background-color: transparent;
+    cursor: pointer;
+    border: none; /* 去边框 */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* 默认值陷阱！ */
+    background-color: #80caff;
+}
+
+
+
 .overview-item {
     width: 70px;
     background-color: rgb(240, 240, 240);

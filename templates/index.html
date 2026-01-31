@@ -77,7 +77,8 @@
         </button>
     </div>
     {% from "macros/svg_macros.html" import svg_restore_transform, svg_clear_canvas, 
-        svg_close_menu, svg_switch_construct, svg_switch_overview, svg_play_start_button %}
+        svg_close_menu, svg_switch_construct, svg_switch_overview, svg_play_start_button,
+        svg_file %}
     <div id="container_menu">
         <button class="menu-button-item" data-action="switch-construct">
             {{ svg_switch_construct() }}
@@ -93,6 +94,9 @@
         </button>
         <button class="menu-button-item" data-action="play-start">
             {{ svg_play_start_button() }}
+        </button>
+        <button class="menu-button-item" data-action="switch-file">
+            {{ svg_file() }}
         </button>
     </div>
     
@@ -154,6 +158,46 @@
         </div>
         <div class="item-container" id="geometry-item"></div>
     </div>
+
+    {% from "macros/svg_macros.html" import svg_file_load, svg_file_down, svg_screenshot %}
+    <!-- 文件面板 -->
+    <div id="filePanel" class="panel">
+        <div class="panel-container">
+            <!-- 标题栏 -->
+            <div class="file-title">文件面板</div>
+            <!-- 处理栏 -->
+            <div class="file-body">
+                <!-- 文件加载 -->
+                <div class="file-zone" data-action="file-load">
+                    <div class="file-trans-icon">
+                        {{ svg_file_load() }}
+                    </div>
+                    <p class="file-trans-text">支持.gmt文件格式</p>
+                </div>
+                <!-- 文件导出 -->
+                <div class="file-zone" data-action="file-down">
+                    <div class="file-trans-icon">
+                        {{ svg_file_down() }}
+                    </div>
+                    <p class="file-trans-text">导出为.gmt文件格式</p>
+                </div>
+                <!-- 其他导出 -->
+                <div class="file-zone" data-action="file-part-down">
+                    <div class="file-trans-icon">
+                        {{ svg_screenshot() }}
+                    </div>
+                    <p class="file-trans-text">截图导出为.png文件格式</p>
+                </div>
+            </div>
+        </div>
+        <!-- 信息 -->
+        <div id="file-process-information"></div>
+    </div>
+    <div class="file-information" id="file-information">
+        <div id="file-information-container"></div>
+        <div id="file-information-button">确定</div>
+    </div>
+    <div class="file-information-masks" id="file-information-masks"></div>
     
     <!-- 预定义所有SVG -->
     {% from "macros/svg_macros.html" import svg_move_view, svg_any_geometry, 
