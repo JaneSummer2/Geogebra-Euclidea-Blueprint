@@ -23,6 +23,10 @@ body {
     margin: 0;
 }
 
+#container_canvas.high-z {
+    z-index: 19;
+}
+
 .moves-layout {
     position: absolute;
     top: 5px;
@@ -66,8 +70,6 @@ body {
 }
 
 #thumbnail-picture {
-    object-fit: cover;
-    width: 100%;
     height: 100%;
 }
 

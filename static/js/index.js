@@ -115,6 +115,41 @@ let panelState;
 
 
 
+let canvasClipState = false;
+let canvasClippingState = false;
+let highlightX = 0;
+let highlightY = 0;
+let highlightWidth = 0;
+let highlightHeight = 0;
+function highlightZoneRestore() {
+    highlightX = 0;
+    highlightY = 0;
+    highlightWidth = 0;
+    highlightHeight = 0;
+}
+const img = new Image();
+
+function canvasClipStart(event) {
+    canvasClipState = true;
+    const canvasContainer = document.getElementById('container_canvas');
+    canvasContainer.classList.add('high-z');
+    img.src = canvas.toDataURL();
+    drawContent();
+}
+
+document.addEventListener('custom event end', canvasClipEnd);
+function canvasClipEnd(event) {
+    canvasClipState = false;
+    canvasClippingState = false;
+    const canvasContainer = document.getElementById('container_canvas');
+    canvasContainer.classList.remove('high-z');
+    drawContent();
+    screenshot(highlightX, highlightY, highlightWidth, highlightHeight);
+    highlightZoneRestore();
+}
+
+
+
 /**
  * 触摸事件开始 过程函数
  * @param {Object} e 事件
@@ -128,6 +163,7 @@ function touchstartEventFunction(e) {
     startX = touches[0].clientX - canvasLeft;
     startY = touches[0].clientY - canvasTop;
     startTime = Date.now();
+    if (canvasClipState) canvasClippingState = true;
 
     pointerPosition.x = startX;
     pointerPosition.y = startY;
@@ -154,6 +190,12 @@ function touchendEventFunction(e) {
     const deltaY = endY - startY;
     const deltaAbsX = Math.abs(deltaX);
     const deltaAbsY = Math.abs(deltaY);
+
+    // 发送事件
+    if (canvasClipState) {
+        document.dispatchEvent(new CustomEvent('custom event end'));
+        return;
+    }
 
     // 坑点：注意touchendEvent时点数是少的，且每松开一个手指就触发一次
     // 状态触发
@@ -256,6 +298,14 @@ function touchmoveEventFunction(e) {
         const y = touch.clientY - canvasTop;
         const deltaX = x - startX;
         const deltaY = y - startY;
+        if (canvasClippingState) {
+            highlightX = startX;
+            highlightY = startY;
+            highlightWidth = deltaX;
+            highlightHeight = deltaY;
+            drawContent();
+            return;
+        }
 
         pointerPosition.x = x;
         pointerPosition.y = y;
@@ -288,6 +338,7 @@ function mouseDownEventFunction(e) {
     isDragging = true;
     startTime = Date.now();
     mouseType = e.button;
+    if (canvasClipState) canvasClippingState = true;
 
     operateEventFunction("start", x, y);
 }
@@ -301,6 +352,14 @@ function mouseMoveEventFunction(e) {
 
     const x = e.clientX - canvasLeft;
     const y = e.clientY - canvasTop;
+    if (canvasClippingState) {
+        highlightX = startX;
+        highlightY = startY;
+        highlightWidth = x - startX;
+        highlightHeight = y - startY;
+        drawContent();
+        return;
+    }
     pointerPosition.x = x;
     pointerPosition.y = y;
     if (tool === 'eraser' || subTool === 'style') drawContent();
@@ -345,6 +404,11 @@ function mouseUpEventFunction(e) {
     const deltaY = endY - startY;
     const deltaAbsX = Math.abs(deltaX);
     const deltaAbsY = Math.abs(deltaY);
+
+    if (canvasClipState) {
+        document.dispatchEvent(new CustomEvent('custom event end'));
+        return;
+    }
 
     if (duration < 300 && deltaAbsX < 15 && deltaAbsY < 15) {
         if (mouseType === 0) {
@@ -838,20 +902,33 @@ function switchEditPattern() {
     }
 }
 
-document.getElementById("thumbnail-screenshot-button").addEventListener("click", screenshot);
+document.getElementById("thumbnail-screenshot-button").addEventListener("click", canvasClipStart);
 /**
  * 截图
  */
-function screenshot() {
-    var dataURL = canvas.toDataURL();
+function screenshot(highlightX, highlightY, highlightWidth, highlightHeight) {
+    const canvas2 = document.createElement('canvas');
+    canvas2.setAttribute('width', highlightWidth);
+    canvas2.setAttribute('height', highlightHeight);
+    const ctx = canvas2.getContext('2d');
+    ctx.drawImage(img, 
+        highlightX, 
+        highlightY, 
+        highlightWidth, 
+        highlightHeight, // 从原图裁剪的位置和大小
+        0, 
+        0, 
+        highlightWidth, 
+        highlightHeight  // 画布上绘制的位置和大小
+    );
 
     let pictureDE = document.getElementById('thumbnail-picture');
     if (pictureDE) {
-        pictureDE.src = dataURL;
+        pictureDE.src = canvas2.toDataURL();
     }else{
         pictureDE = document.createElement('img');
         pictureDE.id = 'thumbnail-picture';
-        pictureDE.src = dataURL;
+        pictureDE.src = canvas2.toDataURL();
         pictureDE.alt = "此处放置缩略图";
     }
 

@@ -53,7 +53,56 @@ function drawContent() {
     // 绘制光标
     drawPointer();
 
+    // 绘制裁剪
+    if (canvasClipState) drawClip();
+
     // 恢复状态
+    ct.restore();
+}
+
+function drawClip() {
+    ct.save();
+    // 1. 画布变灰
+    ct.drawImage(img, 
+        -transform.x / transform.scale, 
+        -transform.y / transform.scale, 
+        canvas.width / transform.scale, 
+        canvas.height / transform.scale);
+    ct.save();
+    ct.globalAlpha = 0.5;
+    ct.fillStyle = "rgb(0, 0, 0)";
+    ct.fillRect(-transform.x / transform.scale, 
+        -transform.y / transform.scale, 
+        canvas.width / transform.scale, 
+        canvas.height / transform.scale);
+    ct.restore();
+
+    // 2. 设置合成模式为 'source-atop'
+    // 此模式意味着：后续绘制的内容只在它与现有（灰色）内容重叠的地方显示，且显示新内容。
+    ct.globalCompositeOperation = 'source-atop';
+
+    // 3. 在指定坐标绘制原图（只有与灰色底图重叠的区域，即高亮区域，会显示为彩色）
+    ct.drawImage(
+        img, 
+        highlightX, 
+        highlightY, 
+        highlightWidth, 
+        highlightHeight, // 从原图裁剪的位置和大小
+        (highlightX - transform.x) / transform.scale, 
+        (highlightY - transform.y) / transform.scale, 
+        highlightWidth / transform.scale, 
+        highlightHeight / transform.scale  // 画布上绘制的位置和大小
+    );
+
+    // 4. (可选) 为高亮区域添加一个白色边框以增强视觉效果
+    ct.globalCompositeOperation = 'source-over'; // 重置为默认合成模式
+    ct.setLineDash([15, 15]);
+    ct.strokeStyle = 'white';
+    ct.lineWidth = 5;
+    ct.strokeRect((highlightX - transform.x) / transform.scale, 
+        (highlightY - transform.y) / transform.scale, 
+        highlightWidth / transform.scale, 
+        highlightHeight / transform.scale);
     ct.restore();
 }
 
