@@ -18,6 +18,7 @@ function updateLayout() {
 window.addEventListener('resize', updateLayout);
 
 let thumbnailSwitch = false;
+const canvasClipState = false;
 
 // 手势变量
 let startX, startY, startTime;
@@ -177,25 +178,306 @@ function refreshMovesCounter() {
 
 
 
-let recordStorage; // recordId:string[]
+let recordStoragePlay = []; // recordId:string[]
+// record: dict{id, name, geometryElement, storage, thumbnail, geometryElementLists}
 /**
  * 加载存储记录
  */
 function loadRecordStorage() {
-    const recordStorageJSON = localStorage.getItem('recordStorage');
+    const recordStorageJSON = localStorage.getItem('recordStoragePlay');
     if (!recordStorageJSON) return;
-    recordStorage = JSON.parse(recordStorageJSON);
+    recordStoragePlay = JSON.parse(recordStorageJSON);
+    
+    loadRecordStorageDE();
 }
 
-// 加载存储记录DE
 function loadRecordStorageDE() {
-    //
+    // 加载存储记录DE
+    const container = document.getElementById("storage-item-list");
+    container.innerHTML = "";
+    for (const [index, id] of recordStoragePlay.entries()) {
+        const dict = JSON.parse(localStorage.getItem(id));
+        const recordItemDE = document.createElement("div");
+        recordItemDE.setAttribute("class", "record-item");
+        recordItemDE.setAttribute('data-action', `choice`);
+        recordItemDE.setAttribute('data-id', dict.id);
+        
+        const indexTextDE = document.createElement("div");
+        indexTextDE.innerText = index;
+        indexTextDE.setAttribute("id", `record-${dict.id}-index`);
+        indexTextDE.setAttribute('data-action', `choice`);
+        indexTextDE.setAttribute('data-id', dict.id);
+        indexTextDE.setAttribute('class', 'record-index');
+        recordItemDE.appendChild(indexTextDE);
+        
+        const nameTextDE = document.createElement("div");
+        nameTextDE.innerText = dict.name;
+        nameTextDE.setAttribute("id", `record-${dict.id}-name`);
+        nameTextDE.setAttribute('data-action', `choice`);
+        nameTextDE.setAttribute('data-id', dict.id);
+        recordItemDE.appendChild(nameTextDE);
+        
+        const renameButtonDE = document.createElement('div');
+        renameButtonDE.setAttribute("class", 'storage-panel-button');
+        renameButtonDE.setAttribute('data-action', 'rename-record');
+        renameButtonDE.setAttribute('data-id', dict.id);
+        const template = document.getElementById(`svg-edit`);
+        if (template) {
+            renameButtonDE.innerHTML = template.innerHTML;
+        }
+        recordItemDE.appendChild(renameButtonDE);
+        
+        container.appendChild(recordItemDE);
+    }
 }
 
-// 存储记录操作
-function recordOperate(operate, value = null) {
-    // 增加
-    // 
+/**
+ * 获取日期和时间
+ * returns {{date: string, time: string}}
+ */
+function getDateTime() {
+    const now = new Date();
+    
+    // 获取日期和时间组件
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从0开始，需+1
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // 格式化显示
+    const dateString = `${year}-${month}-${day}`;
+    const timeString = `${hours}:${minutes}:${seconds}`;
+    
+    return {date: dateString, time: timeString};
+}
+
+let recordStatus = "none";
+let saveStatus = true;
+// 存储记录面板
+function recordPanel(event) {
+    const action = event.target?.dataset.action;
+    if (action === "add-record") {
+        // 添加记录
+        addRecord();        
+    }else if (action === "delete-record") {
+        // 按删除按钮
+        const buttonListDE = document.getElementsByClassName("storage-panel-button");
+        for (const itemDE of buttonListDE) {
+            itemDE.classList.remove("active");
+        }
+        if (recordStatus === "delete") {
+            recordStatus = "none";
+        }else{
+            recordStatus = "delete";
+            document.getElementById("storage-panel-button-delete")?.classList.add("active");
+        }
+    }else if (action === "cover-record") {
+        // 按复写按钮
+        const buttonListDE = document.getElementsByClassName("storage-panel-button");
+        for (const itemDE of buttonListDE) {
+            itemDE.classList.remove("active");
+        }
+        if (recordStatus === "cover") {
+            recordStatus = "none";
+        }else{
+            recordStatus = "cover";
+            document.getElementById("storage-panel-button-cover")?.classList.add("active");
+        }
+    }else if (action === "rename-record") {
+        // 按重命名按钮
+        const name = prompt("重命名");
+        if (!name) return;
+        const recordId = event.target.dataset.id;
+        const recordNameDE = document.getElementById(`record-${recordId}-name`);
+        recordNameDE.innerText = name;
+        const recordDict = JSON.parse(localStorage.getItem(recordId));
+        recordDict.name = name;
+        localStorage.setItem(recordId, JSON.stringify(recordDict));
+        
+    }else if (action === "choice") {
+        // 选中记录
+        if (recordStatus === "none") {
+            let bool = true;
+            if (!saveStatus) bool = confirm("注意：绘图区存在未保存的数据，确定覆盖吗？");
+            if (!bool) return;
+            
+            saveStatus = true;
+            const id = event.target.dataset.id;
+            loadRecord(id);
+        }else if (recordStatus === "delete") {
+            const bool = confirm("确定删除此条记录吗？");
+            if (!bool) return;
+            
+            const id = event.target.dataset.id;
+            recordStoragePlay.splice(recordStoragePlay.indexOf(id), 1);
+            localStorage.setItem("recordStoragePlay", JSON.stringify(recordStoragePlay));
+            localStorage.removeItem(id);
+            
+            // 回显
+            loadRecordStorageDE();
+            
+        }else if (recordStatus === "cover") {
+            const bool = confirm("确定覆盖此条记录吗？");
+            if (!bool) return;
+            
+            saveStatus = true;
+            const id = event.target.dataset.id;
+            const oriRecordDict = JSON.parse(localStorage.getItem(id));
+            const recordDict = {
+                id: id, 
+                name: oriRecordDict.name,
+                geometryElement: geometryManager.toStorage(), 
+                storage: {
+                    construct: storageManager.serialization(), 
+                }
+            };
+            
+            // 缩略图
+            const thumbnail = {};
+            const title_inf = document.getElementById("title_inf")?.textContent;
+            if (title_inf) {
+                thumbnail.title_input = title_inf;
+            }else{
+                thumbnail.title_input = null;
+            }
+            const body_inf = document.getElementById("body_inf")?.innerText;
+            if (body_inf) {
+                thumbnail.body_input = body_inf;
+            }else{
+                thumbnail.body_input = null;
+            }
+            const bottom_inf = document.getElementById("bottom_inf")?.textContent;
+            if (bottom_inf) {
+                thumbnail.bottom_input = bottom_inf;
+            }else{
+                thumbnail.bottom_input = null;
+            }
+            const thumbnailSrc = document.getElementById("thumbnail-picture")?.src;
+            if (thumbnailSrc) {
+                thumbnail.thumbnailSrc = thumbnailSrc;
+            }else{
+                thumbnail.thumbnailSrc = null;
+            }
+            recordDict.thumbnail = thumbnail;
+            
+            // 配置表
+            const lists = {};
+            for (const [key, value] of Object.entries(geometryElementLists)) {
+                const list = [...value];
+                lists[key] = list;
+            }
+            recordDict.geometryElementLists = lists;
+            
+            localStorage.setItem(id, JSON.stringify(recordDict));
+        }
+    }
+    
+    function loadRecord(id) {
+        const dict = JSON.parse(localStorage.getItem(id));
+        // 缩略图
+        const thumbnail = dict.thumbnail;
+        document.getElementById("title_input").value = thumbnail.title_input;
+        document.getElementById("body_input").value = thumbnail.body_input;
+        document.getElementById("bottom_input").value = thumbnail.bottom_input;
+        document.getElementById("title_inf").textContent = thumbnail.title_input;
+        document.getElementById("body_inf").textContent = thumbnail.body_input;
+        document.getElementById("bottom_inf").textContent = thumbnail.bottom_input;
+
+        const oriPictureDE = document.getElementById("thumbnail-picture");
+        if (oriPictureDE) oriPictureDE.remove();
+        if (thumbnail.thumbnailSrc) {
+            const pictureDE = document.createElement('img');
+            pictureDE.id = 'thumbnail-picture';
+            pictureDE.src = thumbnail.thumbnailSrc;
+            pictureDE.alt = "此处放置缩略图";
+            const container = document.getElementById('thumbnail-middle');
+            container.appendChild(pictureDE);
+        }
+        
+        // 选定栏
+        const geometryElementListsLoad = dict.geometryElementLists;
+        for (const [key, value] of Object.entries(geometryElementListsLoad)) {
+            geometryElementLists[key] = new Set(value);
+        }
+    
+        // 几何对象
+        geometryManager.loadStorage(dict.geometryElement);
+        drawContent();
+        
+        // 历史记录
+        const tempStorage = dict.storage;
+        storageManager.deserialization(tempStorage.construct);
+        refreshStorageButton();
+    }
+}
+
+/**
+ * 添加纪录
+ */
+function addRecord() {
+    saveStatus = true;
+    const len = recordStoragePlay.length;
+    let recordId;
+    for (let i = 0; i <= len; i++) {
+        if (!recordStoragePlay.includes(`record-${i}`)) {
+            recordId = `record-play-${i}`;
+            break;
+        }
+    }
+    recordStoragePlay.push(recordId);
+    localStorage.setItem('recordStoragePlay', JSON.stringify(recordStoragePlay));
+    
+    const recordDict = {
+        id: recordId, 
+        name: `${getDateTime().date} ${getDateTime().time}`,
+        geometryElement: geometryManager.toStorage(), 
+        storage: {
+            construct: storageManager.serialization(), 
+        }
+    };
+    
+    // 缩略图
+    const thumbnail = {};
+    const title_inf = document.getElementById("title_inf")?.textContent;
+    if (title_inf) {
+        thumbnail.title_input = title_inf;
+    }else{
+        thumbnail.title_input = null;
+    }
+    const body_inf = document.getElementById("body_inf")?.innerText;
+    if (body_inf) {
+        thumbnail.body_input = body_inf;
+    }else{
+        thumbnail.body_input = null;
+    }
+    const bottom_inf = document.getElementById("bottom_inf")?.textContent;
+    if (bottom_inf) {
+        thumbnail.bottom_input = bottom_inf;
+    }else{
+        thumbnail.bottom_input = null;
+    }
+    const thumbnailSrc = document.getElementById("thumbnail-picture")?.src;
+    if (thumbnailSrc) {
+        thumbnail.thumbnailSrc = thumbnailSrc;
+    }else{
+        thumbnail.thumbnailSrc = null;
+    }
+    recordDict.thumbnail = thumbnail;
+    
+    // 配置表
+    const lists = {};
+    for (const [key, value] of Object.entries(geometryElementLists)) {
+        const list = [...value];
+        lists[key] = list;
+    }
+    recordDict.geometryElementLists = lists;
+    
+    localStorage.setItem(recordId, JSON.stringify(recordDict));
+    
+    // 回显
+    loadRecordStorageDE();
 }
 
 
@@ -577,6 +859,12 @@ function switchPanel(panel) {
         tool = "move";
         drawContent();
         loadRecordStorageDE();
+    }else if (panel === "filePanel") {
+        Object.values(tools).forEach((item) => item?.clear?.());
+        refreshToolFloating();
+        
+        tool = "move";
+        drawContent();
     }else if (panel === "overviewPanel") {
         Object.values(tools).forEach((item) => item.clear?.());
         refreshToolFloating();
@@ -661,6 +949,8 @@ function menuChoice(e) {
         switchPanel("recordPanel");
     }else if (action === "explore-mode") {
         exploreMode();
+    }else if (action === "switch-file") {
+        switchPanel("filePanel");
     }
 }
 
@@ -803,6 +1093,7 @@ window.addEventListener("storage", (event) => {
 });
 function storage() {
     // 存储
+    saveStatus = false;
     const elements = geometryManager.toStorage();
     storageManager.append(elements);
     refreshStorageButton();
@@ -810,102 +1101,200 @@ function storage() {
 
 
 
-const infDict = {
-    "restore": {title: "撤销", context: "撤回上一步"},
-    "redo": {title: "重做", context: "还原下一步"},
-    "open-menu": {title: "菜单", context: "里面的功能主要针对全局"},
-    "switch-construct": {title: "构造面板", context: ""},
-    "switch-overview": {title: "几何元素一览面板", context: "可以查看所有的元素，快速编辑"},
-    "clear-canvas": {title: "清空画布", context: ""},
-    "design-mode": {title: "设计模式", context: "切换到几何设计模式"},
-    "explore-mode": {title: "探索模式", context: "显示所求几何对象，方便研究"},
-    "general-bar": {title: "通用工具栏", context: ""},
-    "point-bar": {title: "点工具栏", context: ""},
-    "line-bar": {title: "直线工具栏", context: ""},
-    "circle-bar": {title: "圆工具栏", context: ""},
-    "construct-bar": {title: "构造工具栏", context: ""},
-    "move": {title: "移动工具", context: "可以拖动点、画布"},
-    "point": {title: "点工具", context: "点击以创建一个点，可以拖动点以放置到几何对象上"},
-    "eraser": {title: "橡皮擦工具", context: ""},
-    "line": {title: "直线工具", context: ""},
-    "circle": {title: "圆工具", context: ""},
-    "intersection": {title: "交点工具", context: ""},
-    "ray": {title: "射线工具", context: ""},
-    "lineSegment": {title: "线段工具", context: ""},
-    "parallelLine": {title: "平行线工具", context: ""},
-    "perpendicularLine": {title: "垂线工具", context: ""},
-    "perpendicularBisector": {title: "垂直平分线工具", context: ""},
-    "angleBisector": {title: "角平分线工具", context: "有3点式和直线式两种构造模式"},
-    "compass": {title: "圆规工具", context: "有3点式和复制式两种构造模式"},
-    "middlePoint": {title: "中点工具", context: "构造两个点的中点，或构造圆心"},
-    "threePointCircle": {title: "三点圆工具", context: "构造过三个点的圆"},
-    "choiceDraw": {title: "选中拖拽模式", context: "可以选择几何对象，只能拖拽点"},
-    "moveView": {title: "移动视图模式", context: "防误触几何对象"},
-    "restoreTransform": {title: "还原画布变化量", context: "将画布的视图变换还原至初始值"},
-    "clear": {title: "清空选择", context: "清空当前工具的选中栏"},
-    "pointStyle": {title: "配置点样式", context: ""},
-    "any": {title: "任意对象", context: "可选中任意几何对象"},
-    "choicePoint": {title: "点对象", context: "仅选中点对象"},
-    "style": {title: "样式刷", context: "拖拽以配置直线的样式为当前线工具样式"},
-    "lineStyle": {title: "配置直线样式", context: ""},
-    "circleStyle": {title: "配置圆样式", context: ""},
-    "threePointAngleBisector": {title: "三点角平分线", context: "第二点为角的顶点"},
-    "twoLineAngleBisector": {title: "角平分线", context: "构造两条直线的两条角平分线"},
-    "threePointCompass": {title: "三点圆规", context: "两点距离为半径，第三点为圆心作圆"},
-    "compassCopy": {title: "复制圆规", context: "复制一个圆"},
-    "twoPointsMiddlePoint": {title: "中点", context: "构造两个点的中点"},
-    "circleCenter": {title: "圆心", context: "构造一个圆的圆心"},
-};
-window.addEventListener("click", showInformationMobile);
-/**
- * 加载信息
- */
-function showInformationMobile(event) {
-    if (widthTypeEquipment !== "mobile") return;
-    const inf = event.target?.dataset.action;
-    if (!inf) return;
-    if (!Object.keys(infDict).includes(inf)) return;
-    
-    const infDE = document.getElementById("mobile-information");
-    infDE.classList.add("active");
-    
-    const title = infDict[inf].title;
-    const context = infDict[inf].context;
-    infDE.innerHTML = `
-        <p class="inf-title">${title}</p>
-        <p class="inf-context">${context}</p>
-    `;
-    setTimeout(() => {
-        infDE.classList.remove("active");
-    }, 3000);
+const geometryElementListsChoice = {
+    all: 'all',
+    hidden: 'all',
+}
+const filePartDownDict = {
+    jpg: 'Joint Photographic Experts Group',
+    png: 'Portable Network Graphics',
 }
 
-window.addEventListener("mousemove", showInformationDesktop)
+const dropdownTriggerChoice = document.getElementById('dropdownTriggerChoice');
+const dropdownMenuChoice = document.getElementById('dropdownMenuChoice');
+const dropdownTriggerFilePartDown = document.getElementById('dropdownTriggerFilePartDown');
+const dropdownMenuFilePartDown = document.getElementById('dropdownMenuFilePartDown');
+const dropdownDEDict = {
+    choice: [dropdownTriggerChoice, dropdownMenuChoice],
+    filePartDown: [dropdownTriggerFilePartDown, dropdownMenuFilePartDown],
+}
+const dropdownValueDict = {
+    choice: [Object.keys(geometryElementListsChoice)[0], geometryElementListsChoice],
+    filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+}
+
+// 初始化下拉菜单选项
+function initDropdownOptions(index) {
+    const dropdownMenu = dropdownDEDict[index][1];
+    dropdownMenu.innerHTML = '';
+    const Dict = dropdownValueDict[index][1];
+    for (const key of Object.keys(Dict)) {
+        const option = document.createElement('div');
+        option.className = 'dropdown-option';
+        option.dataset.id = key;
+        option.dataset.action = `dropdown-${index}-${key}`;
+        
+        option.innerHTML = `
+            <div class="option-label">${key}</div>
+            <div class="option-checkmark">✓</div>
+        `;
+        
+        // 添加点击事件
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectOption(index, key);
+        });
+        
+        dropdownMenu.appendChild(option);
+    }
+}
+
+// 选择选项
+function selectOption(index, item) {
+    // 更新当前选中状态
+    const currentSelected = dropdownValueDict[index][0];
+    if (currentSelected) {
+        const prevOption = document.querySelector(`[data-id="${currentSelected}"]`);
+        if (prevOption) {
+            prevOption.classList.remove('selected');
+        }
+    }
+    
+    const currentOption = document.querySelector(`[data-id="${item}"]`);
+    if (currentOption) {
+        currentOption.classList.add('selected');
+    }
+    
+    // 更新触发器显示
+    const dropdownMenu = dropdownDEDict[index][1];
+    const dropdownTrigger = dropdownDEDict[index][0];
+    dropdownTrigger.querySelector('.placeholder').textContent = item;
+    dropdownTrigger.classList.remove('open');
+    
+    // 存储当前选中
+    dropdownValueDict[index][0] = item;
+    updateSelect(index, item);
+    
+    // 关闭下拉菜单
+    closeDropdown(dropdownMenu, dropdownTrigger);
+}
+
+function updateSelect(index, item) {
+    if (index === 'choice') {
+        updateSelectChoice(item);
+    }else if (index === 'fileDown') {
+        const spanDE = document.getElementById('file-down-text-type');
+        spanDE.innerText = `.${item}`;
+    }else if (index === 'filePartDown') {
+        const spanDE = document.getElementById('file-part-down-text-type');
+        spanDE.innerText = `.${item}`;
+    }
+}
+
+// 切换下拉菜单显示/隐藏
+function toggleDropdown(dropdownMenu, dropdownTrigger) {
+    dropdownMenu.classList.toggle('show');
+    dropdownTrigger.classList.toggle('open');
+    const dropClass = new Array(dropdownMenu.classList);
+    if (!dropClass.includes('show')) {
+        // 1.检查位置
+        const rect = dropdownTrigger.getBoundingClientRect();
+        const bottomDistance = window.innerHeight - rect.bottom;
+        if (bottomDistance < 300) {
+            // 2.调整位置
+            dropdownMenu.style.bottom = `${rect.height}px`;
+            dropdownMenu.style.removeProperty('top');
+        }else{
+            dropdownMenu.style.top = `${rect.height}px`;
+            dropdownMenu.style.removeProperty('bottom');
+        }
+    }
+}
+
+// 关闭下拉菜单
+function closeDropdown(dropdownMenu, dropdownTrigger) {
+    dropdownMenu.classList.remove('show');
+    dropdownTrigger.classList.remove('open');
+}
+
+// 初始化事件监听
+function initEventListeners(dropdownMenu, dropdownTrigger) {
+    // 点击触发器切换下拉菜单
+    dropdownTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown(dropdownMenu, dropdownTrigger);
+    });
+
+    // 点击页面其他地方关闭下拉菜单
+    document.addEventListener('click', (e) => {
+        if (!dropdownMenu.contains(e.target) && !dropdownTrigger.contains(e.target)) {
+            closeDropdown(dropdownMenu, dropdownTrigger);
+        }
+    });
+
+    // 点击下拉菜单内部不关闭（事件冒泡已处理）
+    dropdownMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
+
+// 设置可访问性属性
+function setAccessibility(dropdownMenu, dropdownTrigger, index) {
+    dropdownTrigger.setAttribute('role', 'combobox');
+    dropdownTrigger.setAttribute('aria-haspopup', 'listbox');
+    dropdownTrigger.setAttribute('aria-expanded', 'false');
+    if (index === 'choice') {
+        dropdownTrigger.setAttribute('data-action', 'overview-list');
+    }
+    dropdownMenu.setAttribute('role', 'listbox');
+    
+    dropdownTrigger.addEventListener('click', () => {
+        const isExpanded = dropdownMenu.classList.contains('show');
+        dropdownTrigger.setAttribute('aria-expanded', isExpanded);
+    });
+}
+
+// 初始化
+function dropdownInit() {
+    for (const [index, dropdownDE] of Object.entries(dropdownDEDict)) {
+        const dropdownMenu = dropdownDE[1];
+        const dropdownTrigger = dropdownDE[0];
+        initDropdownOptions(index);
+        initEventListeners(dropdownMenu, dropdownTrigger);
+        setAccessibility(dropdownMenu, dropdownTrigger, index);
+        
+        const dropdownDict = dropdownValueDict[index][1];
+        // 默认选择第一项
+        setTimeout(() => {
+            selectOption(index, Object.keys(dropdownDict)[0]);
+        }, 100);
+    }
+}
+
+// 刷新
+function dropdownRefresh() {
+    for (const [index, dropdownDE] of Object.entries(dropdownDEDict)) {
+        initDropdownOptions(index);
+        
+        const dropdownDict = dropdownValueDict[index][1];
+        // 默认选择第一项
+        setTimeout(() => {
+            selectOption(index, Object.keys(dropdownDict)[0]);
+        }, 100);
+    }
+}
+
+
+
 /**
- * 加载信息
+ * 文件面板点击
+ * @param {Event} event 
  */
-function showInformationDesktop(event) {
-    if (widthTypeEquipment !== "tablet") return;
-    const infDE = document.getElementById("mobile-information");
-    const documentElement = document.elementFromPoint(event.x, event.y);
-    const inf = documentElement?.dataset.action;
-    if (!inf) {
-        infDE.classList.remove("active");
-        return;
+function filePanelClick(event) {
+    const action = event.target.getAttribute("data-action");
+    if (action === 'file-part-down') {
+        alert('没做完呢');
     }
-    if (!Object.keys(infDict).includes(inf)) {
-        infDE.classList.remove("active");
-        return;
-    }
-    
-    infDE.classList.add("active");
-    
-    const title = infDict[inf].title;
-    const context = infDict[inf].context;
-    infDE.innerHTML = `
-        <p class="inf-title">${title}</p>
-        <p class="inf-context">${context}</p>
-    `;
 }
 
 
@@ -1135,6 +1524,9 @@ function success() {
 
     // 重绘
     drawContent();
+
+    //添加存储
+    addRecord();
 }
 
 window.addEventListener("unsuccess", unsuccess);
@@ -1181,7 +1573,10 @@ function DOMLoaded() {
     document.getElementById("container_menu").addEventListener("click", menuChoice);
     document.getElementById("container_overview").addEventListener("click", selectElementByOverview);
     document.getElementById("geometry-item").addEventListener("click", geometryItemClick);
+    document.getElementById("filePanel").addEventListener("click", filePanelClick);
+    document.getElementById("recordPanel").addEventListener("click", recordPanel);
     // 初始化
+    dropdownInit();
     updateLayout();
     resizeCanvas();
     drawContent();

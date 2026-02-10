@@ -146,10 +146,24 @@ class EraserTool {
             const [id] = geometryManager.near([x, y], ["point"]);
             if (!id) return;
             geometryManager.deleteObject(id);
+            // 触发存储事件
+            const event = new CustomEvent("storage", {
+                detail: {
+                    type: "point",
+                },
+            });
+            window.dispatchEvent(event);
         }else{
             const [id] = geometryManager.near([x, y], ["point", 'line', 'circle']);
             if (!id) return;
             geometryManager.deleteObject(id);
+            // 触发存储事件
+            const event = new CustomEvent("storage", {
+                detail: {
+                    type: "point",
+                },
+            });
+            window.dispatchEvent(event);
         }
     }
 }

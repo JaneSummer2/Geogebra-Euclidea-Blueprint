@@ -64,12 +64,15 @@ storageManager.setStatus(true);
 storageManager.append(geometryManager.toStorage());
 
 let geometryElementLists = {
+    all: new Set(),
     hidden: new Set(),
     initial: new Set(),
     name: new Set(),
     movepoints: new Set(),
-    result: new Set(),
+    'result-1': new Set(),
+    'completedShow-1': new Set(),
     explore: new Set(),
+    rules: new Set(),
 };
 
 // 工具
@@ -101,17 +104,21 @@ function getStart() {
 
 function clearLists() {
     geometryElementLists = {
+        all: new Set(),
         hidden: new Set(),
         initial: new Set(),
         name: new Set(),
         movepoints: new Set(),
-        result: new Set(),
+        'result-1': new Set(),
+        'completedShow-1': new Set(),
         explore: new Set(),
+        rules: new Set(),
     };
 }
 
 // 面板状态
 let panelState;
+let resultNumber = 1;
 
 
 
@@ -150,6 +157,304 @@ function canvasClipEnd(event) {
 
 
 
+let recordStorage = []; // recordId:string[]
+// record: dict{id, name, geometryElement, storage, thumbnail, geometryElementLists}
+/**
+ * 加载存储记录
+ */
+function loadRecordStorage() {
+    const recordStorageJSON = localStorage.getItem('recordStorage');
+    if (!recordStorageJSON) return;
+    recordStorage = JSON.parse(recordStorageJSON);
+    
+    loadRecordStorageDE();
+}
+
+function loadRecordStorageDE() {
+    // 加载存储记录DE
+    const container = document.getElementById("storage-item-list");
+    container.innerHTML = "";
+    for (const [index, id] of recordStorage.entries()) {
+        const dict = JSON.parse(localStorage.getItem(id));
+        const recordItemDE = document.createElement("div");
+        recordItemDE.setAttribute("class", "record-item");
+        recordItemDE.setAttribute('data-action', `choice`);
+        recordItemDE.setAttribute('data-id', dict.id);
+        
+        const indexTextDE = document.createElement("div");
+        indexTextDE.innerText = index;
+        indexTextDE.setAttribute("id", `record-${dict.id}-index`);
+        indexTextDE.setAttribute('data-action', `choice`);
+        indexTextDE.setAttribute('data-id', dict.id);
+        indexTextDE.setAttribute('class', 'record-index');
+        recordItemDE.appendChild(indexTextDE);
+        
+        const nameTextDE = document.createElement("div");
+        nameTextDE.innerText = dict.name;
+        nameTextDE.setAttribute("id", `record-${dict.id}-name`);
+        nameTextDE.setAttribute('data-action', `choice`);
+        nameTextDE.setAttribute('data-id', dict.id);
+        recordItemDE.appendChild(nameTextDE);
+        
+        const renameButtonDE = document.createElement('div');
+        renameButtonDE.setAttribute("class", 'storage-panel-button');
+        renameButtonDE.setAttribute('data-action', 'rename-record');
+        renameButtonDE.setAttribute('data-id', dict.id);
+        const template = document.getElementById(`svg-edit`);
+        if (template) {
+            renameButtonDE.innerHTML = template.innerHTML;
+        }
+        recordItemDE.appendChild(renameButtonDE);
+        
+        container.appendChild(recordItemDE);
+    }
+}
+
+/**
+ * 获取日期和时间
+ * returns {{date: string, time: string}}
+ */
+function getDateTime() {
+    const now = new Date();
+    
+    // 获取日期和时间组件
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从0开始，需+1
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // 格式化显示
+    const dateString = `${year}-${month}-${day}`;
+    const timeString = `${hours}:${minutes}:${seconds}`;
+    
+    return {date: dateString, time: timeString};
+}
+
+let recordStatus = "none";
+let saveStatus = true;
+// 存储记录面板
+function recordPanel(event) {
+    const action = event.target?.dataset.action;
+    if (action === "add-record") {
+        // 添加记录
+        saveStatus = true;
+        const len = recordStorage.length;
+        let recordId;
+        for (let i = 0; i <= len; i++) {
+            if (!recordStorage.includes(`record-${i}`)) {
+                recordId = `record-${i}`;
+                break;
+            }
+        }
+        recordStorage.push(recordId);
+        localStorage.setItem('recordStorage', JSON.stringify(recordStorage));
+        
+        const recordDict = {
+            id: recordId, 
+            name: `${getDateTime().date} ${getDateTime().time}`,
+            geometryElement: geometryManager.toStorage(), 
+            storage: {
+                construct: storageManager.serialization(), 
+            }
+        };
+        
+        // 缩略图
+        const thumbnail = {};
+        const title_inf = document.getElementById("title_inf")?.textContent;
+        if (title_inf) {
+            thumbnail.title_input = title_inf;
+        }else{
+            thumbnail.title_input = null;
+        }
+        const body_inf = document.getElementById("body_inf")?.innerText;
+        if (body_inf) {
+            thumbnail.body_input = body_inf;
+        }else{
+            thumbnail.body_input = null;
+        }
+        const bottom_inf = document.getElementById("bottom_inf")?.textContent;
+        if (bottom_inf) {
+            thumbnail.bottom_input = bottom_inf;
+        }else{
+            thumbnail.bottom_input = null;
+        }
+        const thumbnailSrc = document.getElementById("thumbnail-picture")?.src;
+        if (thumbnailSrc) {
+            thumbnail.thumbnailSrc = thumbnailSrc;
+        }else{
+            thumbnail.thumbnailSrc = null;
+        }
+        recordDict.thumbnail = thumbnail;
+        
+        // 配置表
+        const lists = {};
+        for (const [key, value] of Object.entries(geometryElementLists)) {
+            const list = [...value];
+            lists[key] = list;
+        }
+        recordDict.geometryElementLists = lists;
+        
+        localStorage.setItem(recordId, JSON.stringify(recordDict));
+        
+        // 回显
+        loadRecordStorageDE();
+        
+    }else if (action === "delete-record") {
+        // 按删除按钮
+        const buttonListDE = document.getElementsByClassName("storage-panel-button");
+        for (const itemDE of buttonListDE) {
+            itemDE.classList.remove("active");
+        }
+        if (recordStatus === "delete") {
+            recordStatus = "none";
+        }else{
+            recordStatus = "delete";
+            document.getElementById("storage-panel-button-delete")?.classList.add("active");
+        }
+    }else if (action === "cover-record") {
+        // 按复写按钮
+        const buttonListDE = document.getElementsByClassName("storage-panel-button");
+        for (const itemDE of buttonListDE) {
+            itemDE.classList.remove("active");
+        }
+        if (recordStatus === "cover") {
+            recordStatus = "none";
+        }else{
+            recordStatus = "cover";
+            document.getElementById("storage-panel-button-cover")?.classList.add("active");
+        }
+    }else if (action === "rename-record") {
+        // 按重命名按钮
+        const name = prompt("重命名");
+        if (!name) return;
+        const recordId = event.target.dataset.id;
+        const recordNameDE = document.getElementById(`record-${recordId}-name`);
+        recordNameDE.innerText = name;
+        const recordDict = JSON.parse(localStorage.getItem(recordId));
+        recordDict.name = name;
+        localStorage.setItem(recordId, JSON.stringify(recordDict));
+        
+    }else if (action === "choice") {
+        // 选中记录
+        if (recordStatus === "none") {
+            let bool = true;
+            if (!saveStatus) bool = confirm("注意：绘图区存在未保存的数据，确定覆盖吗？");
+            if (!bool) return;
+            
+            saveStatus = true;
+            const id = event.target.dataset.id;
+            loadRecord(id);
+        }else if (recordStatus === "delete") {
+            const bool = confirm("确定删除此条记录吗？");
+            if (!bool) return;
+            
+            const id = event.target.dataset.id;
+            recordStorage.splice(recordStorage.indexOf(id), 1);
+            localStorage.setItem("recordStorage", JSON.stringify(recordStorage));
+            localStorage.removeItem(id);
+            
+            // 回显
+            loadRecordStorageDE();
+            
+        }else if (recordStatus === "cover") {
+            const bool = confirm("确定覆盖此条记录吗？");
+            if (!bool) return;
+            
+            saveStatus = true;
+            const id = event.target.dataset.id;
+            const oriRecordDict = JSON.parse(localStorage.getItem(id));
+            const recordDict = {
+                id: id, 
+                name: oriRecordDict.name,
+                geometryElement: geometryManager.toStorage(), 
+                storage: {
+                    construct: storageManager.serialization(), 
+                }
+            };
+            
+            // 缩略图
+            const thumbnail = {};
+            const title_inf = document.getElementById("title_inf")?.textContent;
+            if (title_inf) {
+                thumbnail.title_input = title_inf;
+            }else{
+                thumbnail.title_input = null;
+            }
+            const body_inf = document.getElementById("body_inf")?.innerText;
+            if (body_inf) {
+                thumbnail.body_input = body_inf;
+            }else{
+                thumbnail.body_input = null;
+            }
+            const bottom_inf = document.getElementById("bottom_inf")?.textContent;
+            if (bottom_inf) {
+                thumbnail.bottom_input = bottom_inf;
+            }else{
+                thumbnail.bottom_input = null;
+            }
+            const thumbnailSrc = document.getElementById("thumbnail-picture")?.src;
+            if (thumbnailSrc) {
+                thumbnail.thumbnailSrc = thumbnailSrc;
+            }else{
+                thumbnail.thumbnailSrc = null;
+            }
+            recordDict.thumbnail = thumbnail;
+            
+            // 配置表
+            const lists = {};
+            for (const [key, value] of Object.entries(geometryElementLists)) {
+                const list = [...value];
+                lists[key] = list;
+            }
+            recordDict.geometryElementLists = lists;
+            
+            localStorage.setItem(id, JSON.stringify(recordDict));
+        }
+    }
+    
+    function loadRecord(id) {
+        const dict = JSON.parse(localStorage.getItem(id));
+        // 缩略图
+        const thumbnail = dict.thumbnail;
+        document.getElementById("title_input").value = thumbnail.title_input;
+        document.getElementById("body_input").value = thumbnail.body_input;
+        document.getElementById("bottom_input").value = thumbnail.bottom_input;
+        document.getElementById("title_inf").textContent = thumbnail.title_input;
+        document.getElementById("body_inf").textContent = thumbnail.body_input;
+        document.getElementById("bottom_inf").textContent = thumbnail.bottom_input;
+
+        const oriPictureDE = document.getElementById("thumbnail-picture");
+        if (oriPictureDE) oriPictureDE.remove();
+        if (thumbnail.thumbnailSrc) {
+            const pictureDE = document.createElement('img');
+            pictureDE.id = 'thumbnail-picture';
+            pictureDE.src = thumbnail.thumbnailSrc;
+            pictureDE.alt = "此处放置缩略图";
+            const container = document.getElementById('thumbnail-middle');
+            container.appendChild(pictureDE);
+        }
+        
+        // 选定栏
+        const geometryElementListsLoad = dict.geometryElementLists;
+        for (const [key, value] of Object.entries(geometryElementListsLoad)) {
+            geometryElementLists[key] = new Set(value);
+        }
+    
+        // 几何对象
+        geometryManager.loadStorage(dict.geometryElement);
+        drawContent();
+        
+        // 历史记录
+        const tempStorage = dict.storage;
+        storageManager.deserialization(tempStorage.construct);
+        refreshStorageButton();
+    }
+}
+
+
+
 /**
  * 触摸事件开始 过程函数
  * @param {Object} e 事件
@@ -163,7 +468,10 @@ function touchstartEventFunction(e) {
     startX = touches[0].clientX - canvasLeft;
     startY = touches[0].clientY - canvasTop;
     startTime = Date.now();
-    if (canvasClipState) canvasClippingState = true;
+    if (canvasClipState) {
+        canvasClippingState = true;
+        return;
+    }
 
     pointerPosition.x = startX;
     pointerPosition.y = startY;
@@ -338,7 +646,10 @@ function mouseDownEventFunction(e) {
     isDragging = true;
     startTime = Date.now();
     mouseType = e.button;
-    if (canvasClipState) canvasClippingState = true;
+    if (canvasClipState) {
+        canvasClippingState = true;
+        return;
+    }
 
     operateEventFunction("start", x, y);
 }
@@ -567,6 +878,12 @@ function switchPanel(panel) {
         
         tool = "move";
         drawContent();
+    }else if (panel === "recordPanel") {
+        Object.values(tools).forEach((item) => item?.clear?.());
+        refreshToolFloating();
+        
+        tool = "move";
+        drawContent();
     }else if (panel === "toolbarPanel") {
         choiceToolMenu("general-bar");
         refreshToolFloating();
@@ -644,6 +961,8 @@ function menuChoice(e) {
         switchPanel("overviewPanel");
     }else if (action === "switch-file") {
         switchPanel("filePanel");
+    }else if (action === "switch-record") {
+        switchPanel("recordPanel");
     }else if (action === "play-start") {
         playStart();
     }
@@ -686,7 +1005,16 @@ function dataTransfer() {
     const geometryElementDict = {};
     for (const [key, value] of Object.entries(geometryElementLists)) {
         // 因为JSON不支持Set，所以需要先转换为列表
-        geometryElementDict[key] = [...value];
+        // 缺省补全
+        const strList = key.split('-');
+        if (strList[0] === 'completedShow' && value.size === 0) {
+            const keyName = `result-${strList[1]}`;
+            geometryElementDict[key] = [...geometryElementLists[keyName]];
+        }else if (strList[0] === 'explore' && value.size === 0) {
+            geometryElementDict[key] = [...geometryElementLists["result-1"]];
+        }else{
+            geometryElementDict[key] = [...value];
+        }
     }
     sessionStorage.setItem('geometryElementLists', JSON.stringify(geometryElementDict));
     
@@ -704,8 +1032,8 @@ function dataTransfer() {
 
 
 /**
- * 文件上传栏点击
- * @param {*} event 
+ * 文件面板点击
+ * @param {Event} event 
  */
 function filePanelClick(event) {
     const action = event.target.getAttribute("data-action");
@@ -721,20 +1049,23 @@ function filePanelClick(event) {
         }, 100);
 
     }else if (action === 'file-down') {
-        alert("sb")
+        alert('没做完呢');
     }else if (action === 'file-part-down') {
-        alert("sb")
+        alert('没做完呢');
     }
 }
 
 /**
  * 文件上传
- * @param {*} event 
+ * @param {Event} event 
  */
 async function fileLoad(event) {
     // 1. 获取选中的文件
     const file = event.target.files[0];
     if (!file) return;
+    const fileName = file.name;
+    const fileType = fileName.split('.').at(-1);
+    console.log(fileType);
 
     // 2. 创建FormData对象并添加文件
     const formData = new FormData();
@@ -777,7 +1108,7 @@ document.addEventListener('file load error', fileLoadError);
 
 /**
  * 文件加载成功
- * @param {*} event 
+ * @param {Event} event 
  */
 function fileLoadSuccess(event) {
     fileProcessInformation.textContent = '';
@@ -790,11 +1121,12 @@ function fileLoadSuccess(event) {
 
 /**
  * 文件加载失败
- * @param {*} event 
+ * @param {Event} event 
  */
 function fileLoadError(event) {
     fileProcessInformation.innerHTML = '';
     fileProcessInformation.classList.add('active');
+    fileProcessInformation.classList.add('fail');
 
     const text1DE = document.createElement('div');
     text1DE.textContent = '加载失败';
@@ -805,17 +1137,18 @@ function fileLoadError(event) {
     text2DE.setAttribute('class', 'text2DE');
     text2DE.addEventListener('click', openFileImformationModal);
     const modal = document.getElementById('file-information-container');
-    modal.textContent = event?.detail?.message;
+    modal.innerText = event?.detail?.message;
     fileProcessInformation.appendChild(text2DE);
 
     setTimeout(() => {
         fileProcessInformation.classList.remove("active");
+        fileProcessInformation.classList.remove("fail");
     }, 5000);
 }
 
 /**
  * 打开文件加载信息
- * @param {*} event 
+ * @param {Event} event 
  */
 function openFileImformationModal(event) {
     const modal = document.getElementById('file-information');
@@ -830,7 +1163,7 @@ document.getElementById('file-information-button').addEventListener('click', clo
 
 /**
  * 关闭文件加载信息
- * @param {*} event 
+ * @param {Event} event 
  */
 function closeFileImformationModal(event) {
     const modal = document.getElementById('file-information');
@@ -888,7 +1221,7 @@ function switchEditPattern() {
         for (const item of infList) item.style.display = 'block';
         document.getElementById("thumbnail-title-switch").classList.remove("active");
         document.getElementById("title_inf").textContent = document.getElementById("title_input").value;
-        document.getElementById("body_inf").innerText = document.getElementById("body_input").value;
+        document.getElementById("body_inf").textContent = document.getElementById("body_input").value;
         document.getElementById("bottom_inf").textContent = document.getElementById("bottom_input").value;
     }else{
         thumbnailSwitch = true;
@@ -931,6 +1264,9 @@ function screenshot(highlightX, highlightY, highlightWidth, highlightHeight) {
         pictureDE.src = canvas2.toDataURL();
         pictureDE.alt = "此处放置缩略图";
     }
+    setTimeout(() => {
+        canvas2.remove();
+    }, 100);
 
     const container = document.getElementById('thumbnail-middle');
     container.appendChild(pictureDE);
@@ -989,6 +1325,7 @@ function redoStorage() {
 window.addEventListener("storage", storage);
 function storage() {
     // 存储
+    saveStatus = false;
     const elements = geometryManager.toStorage();
     storageManager.append(elements);
     refreshStorageButton();
@@ -996,101 +1333,218 @@ function storage() {
 
 
 
-const infDict = {
-    "restore": {title: "撤销", context: "撤回上一步"},
-    "redo": {title: "重做", context: "还原下一步"},
-    "open-menu": {title: "菜单", context: "里面的功能主要针对全局"},
-    "switch-construct": {title: "构造面板", context: ""},
-    "switch-overview": {title: "几何元素一览面板", context: "可以查看所有的元素，快速编辑"},
-    "clear-canvas": {title: "清空画布", context: ""},
-    "play-start": {title: "游玩模式", context: "切换到几何构造模式"},
-    "general-bar": {title: "通用工具栏", context: ""},
-    "point-bar": {title: "点工具栏", context: ""},
-    "line-bar": {title: "直线工具栏", context: ""},
-    "circle-bar": {title: "圆工具栏", context: ""},
-    "construct-bar": {title: "构造工具栏", context: ""},
-    "move": {title: "移动工具", context: "可以拖动点、画布"},
-    "point": {title: "点工具", context: "点击以创建一个点，可以拖动点以放置到几何对象上"},
-    "eraser": {title: "橡皮擦工具", context: ""},
-    "line": {title: "直线工具", context: ""},
-    "circle": {title: "圆工具", context: ""},
-    "intersection": {title: "交点工具", context: ""},
-    "ray": {title: "射线工具", context: ""},
-    "lineSegment": {title: "线段工具", context: ""},
-    "parallelLine": {title: "平行线工具", context: ""},
-    "perpendicularLine": {title: "垂线工具", context: ""},
-    "perpendicularBisector": {title: "垂直平分线工具", context: ""},
-    "angleBisector": {title: "角平分线工具", context: "有3点式和直线式两种构造模式"},
-    "compass": {title: "圆规工具", context: "有3点式和复制式两种构造模式"},
-    "middlePoint": {title: "中点工具", context: "构造两个点的中点，或构造圆心"},
-    "threePointCircle": {title: "三点圆工具", context: "构造过三个点的圆"},
-    "choiceDraw": {title: "选中拖拽模式", context: "可以选择几何对象，只能拖拽点"},
-    "moveView": {title: "移动视图模式", context: "防误触几何对象"},
-    "restoreTransform": {title: "还原画布变化量", context: "将画布的视图变换还原至初始值"},
-    "clear": {title: "清空选择", context: "清空当前工具的选中栏"},
-    "pointStyle": {title: "配置点样式", context: ""},
-    "any": {title: "任意对象", context: "可选中任意几何对象"},
-    "choicePoint": {title: "点对象", context: "仅选中点对象"},
-    "style": {title: "样式刷", context: "拖拽以配置直线的样式为当前线工具样式"},
-    "lineStyle": {title: "配置直线样式", context: ""},
-    "circleStyle": {title: "配置圆样式", context: ""},
-    "threePointAngleBisector": {title: "三点角平分线", context: "第二点为角的顶点"},
-    "twoLineAngleBisector": {title: "角平分线", context: "构造两条直线的两条角平分线"},
-    "threePointCompass": {title: "三点圆规", context: "两点距离为半径，第三点为圆心作圆"},
-    "compassCopy": {title: "复制圆规", context: "复制一个圆"},
-    "twoPointsMiddlePoint": {title: "中点", context: "构造两个点的中点"},
-    "circleCenter": {title: "圆心", context: "构造一个圆的圆心"},
-};
-window.addEventListener("click", showInformationMobile);
-/**
- * 加载信息
- */
-function showInformationMobile(event) {
-    if (widthTypeEquipment !== "mobile") return;
-    const inf = event.target?.dataset.action;
-    if (!inf) return;
-    if (!Object.keys(infDict).includes(inf)) return;
-    
-    const infDE = document.getElementById("mobile-information");
-    infDE.classList.add("active");
-    
-    const title = infDict[inf].title;
-    const context = infDict[inf].context;
-    infDE.innerHTML = `
-        <p class="inf-title">${title}</p>
-        <p class="inf-context">${context}</p>
-    `;
-    setTimeout(() => {
-        infDE.classList.remove("active");
-    }, 3000);
+function overviewTitleClick(event) {
+    const action = event.target?.dataset?.action;
+    if (action === 'result-number-add') {
+        resultNumber++;
+        const resultNumberDE = document.getElementById('overview-result-number');
+        resultNumberDE.innerText = resultNumber;
+
+        const newResult = `result-${resultNumber}`;
+        geometryElementLists[newResult] = new Set();
+        const newShow = `completedShow-${resultNumber}`;
+        geometryElementLists[newShow] = new Set();
+        dropdownRefresh();
+    }else if (action === 'result-number-sub') {
+        if (resultNumber <= 1) return;
+        const newResult = `result-${resultNumber}`;
+        delete geometryElementLists[newResult];
+        const newShow = `completedShow-${resultNumber}`;
+        delete geometryElementLists[newShow];
+        dropdownRefresh();
+
+        resultNumber--;
+        const resultNumberDE = document.getElementById('overview-result-number');
+        resultNumberDE.innerText = resultNumber;
+    }
 }
 
-window.addEventListener("mousemove", showInformationDesktop)
-/**
- * 加载信息
- */
-function showInformationDesktop(event) {
-    if (widthTypeEquipment !== "tablet") return;
-    const infDE = document.getElementById("mobile-information");
-    const documentElement = document.elementFromPoint(event.x, event.y);
-    const inf = documentElement?.dataset.action;
-    if (!inf) {
-        infDE.classList.remove("active");
-        return;
+const fileDownDict = {
+    gmt: 'Geometry',
+    ggb: 'Geogebra',
+    geb: 'Geogebra-Euclidea-Blueprint',
+}
+const filePartDownDict = {
+    jpg: 'Joint Photographic Experts Group',
+    png: 'Portable Network Graphics',
+}
+
+const dropdownTriggerChoice = document.getElementById('dropdownTriggerChoice');
+const dropdownMenuChoice = document.getElementById('dropdownMenuChoice');
+const dropdownTriggerFileDown = document.getElementById('dropdownTriggerFileDown');
+const dropdownMenuFileDown = document.getElementById('dropdownMenuFileDown');
+const dropdownTriggerFilePartDown = document.getElementById('dropdownTriggerFilePartDown');
+const dropdownMenuFilePartDown = document.getElementById('dropdownMenuFilePartDown');
+const dropdownDEDict = {
+    choice: [dropdownTriggerChoice, dropdownMenuChoice],
+    fileDown: [dropdownTriggerFileDown, dropdownMenuFileDown],
+    filePartDown: [dropdownTriggerFilePartDown, dropdownMenuFilePartDown],
+}
+const dropdownValueDict = {
+    choice: [Object.keys(geometryElementLists)[0], geometryElementLists],
+    fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
+    filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+}
+
+// 初始化下拉菜单选项
+function initDropdownOptions(index) {
+    const dropdownMenu = dropdownDEDict[index][1];
+    dropdownMenu.innerHTML = '';
+    const Dict = dropdownValueDict[index][1];
+    for (const key of Object.keys(Dict)) {
+        const option = document.createElement('div');
+        option.className = 'dropdown-option';
+        option.dataset.id = key;
+        option.dataset.action = `dropdown-${index}-${key}`;
+        
+        option.innerHTML = `
+            <div class="option-label">${key}</div>
+            <div class="option-checkmark">✓</div>
+        `;
+        
+        // 添加点击事件
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectOption(index, key);
+        });
+        
+        dropdownMenu.appendChild(option);
     }
-    if (!Object.keys(infDict).includes(inf)) {
-        infDE.classList.remove("active");
-        return;
+}
+
+// 选择选项
+function selectOption(index, item) {
+    // 更新当前选中状态
+    const currentSelected = dropdownValueDict[index][0];
+    if (currentSelected) {
+        const prevOption = document.querySelector(`[data-id="${currentSelected}"]`);
+        if (prevOption) {
+            prevOption.classList.remove('selected');
+        }
     }
     
-    infDE.classList.add("active");
+    const currentOption = document.querySelector(`[data-id="${item}"]`);
+    if (currentOption) {
+        currentOption.classList.add('selected');
+    }
     
-    const title = infDict[inf].title;
-    const context = infDict[inf].context;
-    infDE.innerHTML = `
-        <p class="inf-title">${title}</p>
-        <p class="inf-context">${context}</p>
-    `;
+    // 更新触发器显示
+    const dropdownMenu = dropdownDEDict[index][1];
+    const dropdownTrigger = dropdownDEDict[index][0];
+    dropdownTrigger.querySelector('.placeholder').textContent = item;
+    dropdownTrigger.classList.remove('open');
+    
+    // 存储当前选中
+    dropdownValueDict[index][0] = item;
+    updateSelect(index, item);
+    
+    // 关闭下拉菜单
+    closeDropdown(dropdownMenu, dropdownTrigger);
+}
+
+function updateSelect(index, item) {
+    if (index === 'choice') {
+        updateSelectChoice(item);
+    }else if (index === 'fileDown') {
+        const spanDE = document.getElementById('file-down-text-type');
+        spanDE.innerText = `.${item}`;
+    }else if (index === 'filePartDown') {
+        const spanDE = document.getElementById('file-part-down-text-type');
+        spanDE.innerText = `.${item}`;
+    }
+}
+
+// 切换下拉菜单显示/隐藏
+function toggleDropdown(dropdownMenu, dropdownTrigger) {
+    dropdownMenu.classList.toggle('show');
+    dropdownTrigger.classList.toggle('open');
+    const dropClass = new Array(dropdownMenu.classList);
+    if (!dropClass.includes('show')) {
+        // 1.检查位置
+        const rect = dropdownTrigger.getBoundingClientRect();
+        const bottomDistance = window.innerHeight - rect.bottom;
+        if (bottomDistance < 300) {
+            // 2.调整位置
+            dropdownMenu.style.bottom = `${rect.height}px`;
+            dropdownMenu.style.removeProperty('top');
+        }else{
+            dropdownMenu.style.top = `${rect.height}px`;
+            dropdownMenu.style.removeProperty('bottom');
+        }
+    }
+}
+
+// 关闭下拉菜单
+function closeDropdown(dropdownMenu, dropdownTrigger) {
+    dropdownMenu.classList.remove('show');
+    dropdownTrigger.classList.remove('open');
+}
+
+// 初始化事件监听
+function initEventListeners(dropdownMenu, dropdownTrigger) {
+    // 点击触发器切换下拉菜单
+    dropdownTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown(dropdownMenu, dropdownTrigger);
+    });
+
+    // 点击页面其他地方关闭下拉菜单
+    document.addEventListener('click', (e) => {
+        if (!dropdownMenu.contains(e.target) && !dropdownTrigger.contains(e.target)) {
+            closeDropdown(dropdownMenu, dropdownTrigger);
+        }
+    });
+
+    // 点击下拉菜单内部不关闭（事件冒泡已处理）
+    dropdownMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
+
+// 设置可访问性属性
+function setAccessibility(dropdownMenu, dropdownTrigger, index) {
+    dropdownTrigger.setAttribute('role', 'combobox');
+    dropdownTrigger.setAttribute('aria-haspopup', 'listbox');
+    dropdownTrigger.setAttribute('aria-expanded', 'false');
+    if (index === 'choice') {
+        dropdownTrigger.setAttribute('data-action', 'overview-list');
+    }
+    dropdownMenu.setAttribute('role', 'listbox');
+    
+    dropdownTrigger.addEventListener('click', () => {
+        const isExpanded = dropdownMenu.classList.contains('show');
+        dropdownTrigger.setAttribute('aria-expanded', isExpanded);
+    });
+}
+
+// 初始化
+function dropdownInit() {
+    for (const [index, dropdownDE] of Object.entries(dropdownDEDict)) {
+        const dropdownMenu = dropdownDE[1];
+        const dropdownTrigger = dropdownDE[0];
+        initDropdownOptions(index);
+        initEventListeners(dropdownMenu, dropdownTrigger);
+        setAccessibility(dropdownMenu, dropdownTrigger, index);
+        
+        const dropdownDict = dropdownValueDict[index][1];
+        // 默认选择第一项
+        setTimeout(() => {
+            selectOption(index, Object.keys(dropdownDict)[0]);
+        }, 100);
+    }
+}
+
+// 刷新
+function dropdownRefresh() {
+    for (const [index, dropdownDE] of Object.entries(dropdownDEDict)) {
+        initDropdownOptions(index);
+        
+        const dropdownDict = dropdownValueDict[index][1];
+        // 默认选择第一项
+        setTimeout(() => {
+            selectOption(index, Object.keys(dropdownDict)[0]);
+        }, 100);
+    }
 }
 
 
@@ -1104,7 +1558,7 @@ function dataLoad() {
     if (thumbnailJSON) {
         const thumbnail = JSON.parse(thumbnailJSON);
         document.getElementById("title_inf").textContent = thumbnail.title_input;
-        document.getElementById("body_inf").innerText = thumbnail.body_input;
+        document.getElementById("body_inf").textContent = thumbnail.body_input;
         document.getElementById("bottom_inf").textContent = thumbnail.bottom_input;
         document.getElementById("title_input").value = thumbnail.title_input;
         document.getElementById("body_input").value = thumbnail.body_input;
@@ -1229,10 +1683,13 @@ function DOMLoaded() {
     document.getElementById("floating-bar-buttons").addEventListener("click", toolSwitchChoice);
     document.getElementById("container_more").addEventListener("click", morebarChoice);
     document.getElementById("container_menu").addEventListener("click", menuChoice);
+    document.getElementById("overview-title").addEventListener("click", overviewTitleClick);
     document.getElementById("container_overview").addEventListener("click", selectElementByOverview);
     document.getElementById("geometry-item").addEventListener("click", geometryItemClick);
     document.getElementById("filePanel").addEventListener("click", filePanelClick);
+    document.getElementById("recordPanel").addEventListener("click", recordPanel);
     // 初始化
+    dropdownInit();
     updateLayout();
     resizeCanvas();
     drawContent();
@@ -1240,4 +1697,5 @@ function DOMLoaded() {
     refreshMenuTool();
     refreshStorageButton();
     dataLoad();
+    loadRecordStorage();
 }

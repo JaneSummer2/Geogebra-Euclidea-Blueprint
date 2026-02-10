@@ -71,6 +71,7 @@ body {
 
 #thumbnail-picture {
     height: 100%;
+    object-fit: cover;
 }
 
 .thumbnail.open {
@@ -238,6 +239,10 @@ textarea {
 #bottom_inf {
     font-size: 18;
     color: #FFD200;
+}
+
+#body_inf {
+    white-space: pre;
 }
 
 
@@ -450,6 +455,12 @@ textarea {
 
 
 
+.filePanel {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .file-title {
     width: 100%;
     background-color: rgb(200, 200, 200);
@@ -499,6 +510,12 @@ textarea {
     pointer-events: none;
 }
 
+.file-trans-text-stress {
+    line-height: 0.2;
+    pointer-events: none;
+    color: red;
+}
+
 #file-process-information {
     bottom: 5px;
     left: 5px;
@@ -517,12 +534,16 @@ textarea {
     pointer-events: all;
 }
 
+#file-process-information.fail {
+    background-color: red;
+}
+
 .text2DE {
     cursor: pointer;
 }
 
 .text2DE:hover {
-    color: #0095FF;
+    color: white;
 }
 
 .file-information {
@@ -552,6 +573,7 @@ textarea {
 .file-information-container {
     max-height: 100%;
     overflow-y: auto;
+    white-space: pre-wrap;
 }
 
 .file-information-masks {
@@ -578,6 +600,168 @@ textarea {
 }
 
 
+
+.overview-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.overview-result {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#overview-result-number {
+    font-size: 30px;
+    font-weight: bolder;
+}
+
+.overview-svg-button {
+    width: 50px;
+    height: 50px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 5px;
+    cursor: pointer;
+    border: none; /* 去边框 */
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* 默认值陷阱！ */
+}
+
+.overview-svg-button .svg-icon {
+    stroke: rgb(128, 128, 255);
+}
+
+.overview-list-target {
+    display: flex;
+    align-items: center;
+}
+
+/* 下拉栏 */
+.dropdown-wrapper {
+    position: relative;
+}
+
+/* 下拉栏首 */
+.dropdown-trigger {
+    width: 100%;
+    padding: 6px 10px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    gap: 5px;
+}
+
+.dropdown-trigger:hover {
+    border-color: #667eea;
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.1);
+}
+
+.dropdown-trigger:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.dropdown-trigger .placeholder {
+    color: #999;
+    pointer-events: none;
+}
+
+.dropdown-trigger .icon {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #667eea;
+    pointer-events: none;
+}
+
+.dropdown-trigger.open .icon {
+    transform: rotate(180deg);
+}
+
+/* 下拉内容 */
+.dropdown-menu {
+    position: absolute;
+    left: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-option {
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.dropdown-option:hover {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    padding-left: 24px;
+}
+
+.dropdown-option.selected {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+    color: #667eea;
+    font-weight: 500;
+}
+
+.option-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.option-label {
+    flex: 1;
+    pointer-events: none;
+}
+
+.option-checkmark {
+    color: #667eea;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.dropdown-option.selected .option-checkmark {
+    opacity: 1;
+}
 
 .overview-item {
     width: 70px;
@@ -671,17 +855,19 @@ textarea {
     pointer-events: auto;
 }
 
-#mobile-information {
-    width: 100%;
+.information {
+    position: fixed;
     background-color: rgba(225, 225, 225, 0.9);
     border-radius: 5px;
     visibility: hidden;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: visibility 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9;
 }
 
-#mobile-information.active {
+.information.active {
     visibility: visible;
     opacity: 1;
 }
@@ -694,6 +880,7 @@ textarea {
 .inf-context {
     font-size: 20px;
     margin: 0;
+    white-space: pre-wrap;
 }
 
 
@@ -751,6 +938,61 @@ textarea {
     align-items: center;
     justify-content: center;
     padding: 0; /* 默认值陷阱！ */
+}
+
+
+
+#storage-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.head-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    position: sticky;
+    top: 0;
+    width: 100%;
+}
+
+.record-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    background-color: rgb(230, 230, 230);
+    cursor: pointer;
+}
+
+.record-index {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.storage-panel-button {
+    width: 50px;
+    height: 50px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 5px;
+    cursor: pointer;
+    border: none; /* 去边框 */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* 默认值陷阱！ */
+}
+
+.storage-panel-button.active .svg-icon {
+    stroke: #0fd869;
+}
+
+.record-item-index-style {
+    background-color: rgb(200, 200, 200);
 }
 
 
@@ -1001,6 +1243,10 @@ textarea {
         height: 40px;
     }
     .item-container-button {
+        width: 40px;
+        height: 40px;
+    }
+    .storage-panel-button {
         width: 40px;
         height: 40px;
     }

@@ -1,13 +1,8 @@
 /* geometryItem.js */
 
-const overviewPanelSelector = document.getElementById("overview-select");
 let overviewPanelSelect = 'all';
-overviewPanelSelector.addEventListener('change', overviewPanelSelectorChanged);
-/**
- * 几何元素列表选择器变化
- */
-function overviewPanelSelectorChanged() {
-    overviewPanelSelect = overviewPanelSelector.value;
+function updateSelectChoice(currentSelected) {
+    overviewPanelSelect = currentSelected;
     loadGeometryElements();
 }
 
@@ -20,7 +15,7 @@ function loadGeometryElements() {
     let count = 0;
     overview.innerHTML = "";
     
-    geometryElements.forEach((element) => {
+    for (const element of geometryElements) {
         // 生成
         const item = document.createElement("div");
         const itemText = document.createElement("div");
@@ -30,6 +25,9 @@ function loadGeometryElements() {
         const type = element.getType();
         const name = element.getName();
         count += 1;
+        if (overviewPanelSelect === 'movepoints' && type !== 'point') {
+            continue;
+        }
         
         // 创建SVG元素
         function createThumbnailSVG(element, type) {
@@ -166,7 +164,7 @@ function loadGeometryElements() {
 
         const set = geometryElementLists[overviewPanelSelect];
         if (set?.has(id)) item.classList.add('select');
-    });
+    }
     overview.style.display = 'none';
     overview.offsetHeight;
     overview.style.display = 'grid';

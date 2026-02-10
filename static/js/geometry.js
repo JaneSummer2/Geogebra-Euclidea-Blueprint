@@ -588,14 +588,14 @@ class GeometryElementManager {
             const type = element.getType();
             if (type === "point") {
                 const id = element.getId();
-                if (geometryElementLists.result.has(id) || geometryElementLists.explore.has(id)) {
+                if (geometryElementLists['result-1'].has(id) || geometryElementLists.explore.has(id)) {
                     resultPoints.push(element);
                 }else{
                     points.push(element);
                 }
             }else{
                 const id = element.getId();
-                if (geometryElementLists.result.has(id) || geometryElementLists.explore.has(id)) {
+                if (geometryElementLists['result-1'].has(id) || geometryElementLists.explore.has(id)) {
                     resultexceptPoints.push(element);
                 }else{
                     exceptPoints.push(element);

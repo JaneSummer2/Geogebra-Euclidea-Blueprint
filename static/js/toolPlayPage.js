@@ -4,7 +4,7 @@ const toolMenus = {
     'euclidea': [
         'move', 'point', 'line', 'circle', 'intersection', 'compass',
         'parallelLine', 'perpendicularLine', 'perpendicularBisector', 'angleBisector',
-        'compass', 'middlePoint', 'threePointCircle'
+        'middlePoint', 'threePointCircle'
     ],
 }
 const toolMenuDefaultValue = {

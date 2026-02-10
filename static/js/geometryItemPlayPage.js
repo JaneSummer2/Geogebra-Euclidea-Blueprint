@@ -1,13 +1,8 @@
 /* geometryItem.js */
 
-const overviewPanelSelector = document.getElementById("overview-select");
 let overviewPanelSelect = 'all';
-overviewPanelSelector.addEventListener('change', overviewPanelSelectorChanged);
-/**
- * 几何元素列表选择器变化
- */
-function overviewPanelSelectorChanged() {
-    overviewPanelSelect = overviewPanelSelector.value;
+function updateSelectChoice(currentSelected) {
+    overviewPanelSelect = currentSelected;
     loadGeometryElements();
 }
 

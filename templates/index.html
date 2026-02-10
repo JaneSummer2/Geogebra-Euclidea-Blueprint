@@ -9,8 +9,8 @@
     <!-- 过渡界面 -->
     <div id="trans-animated">
         <div id="trans-animated-pictures">
-            <img id="trans-animated-picture1" src="{{ url_for('static', filename='images/geogebra_icon.svg') }}" alt="Geogebra图标"></img>
-            <img id="trans-animated-picture2" src="{{ url_for('static', filename='images/1200x630wa.png') }}" alt="Euclidea图标"></img>
+            <img id="trans-animated-picture1" src="{{ url_for('static', filename='images/geogebra_icon.png') }}" alt="Geogebra图标">
+            <img id="trans-animated-picture2" src="{{ url_for('static', filename='images/1200x630wa.png') }}" alt="Euclidea图标">
         </div>
         <div id="trans-animated-text">
             <div id="trans-animated-text1-div"><span id="trans-animated-text1">Geogebra</span></div>
@@ -24,12 +24,12 @@
     <div id="thumbnail" class="thumbnail">
         <div class="hidden_inf thumbnail-title">
             <div class="thumbnail-title-container">
-                <button id="thumbnail-title-switch">
+                <button id="thumbnail-title-switch" data-action="edit-information">
                     {{ svg_switch_edit_button() }}
                 </button>
                 <input class="switch_input" placeholder="请输入文本" id="title_input" maxlength="15"></input>
                 <div class="switch_inf" id="title_inf">&emsp;</div>
-                <button id="thumbnail-title-button">
+                <button id="thumbnail-title-button" data-action="close">
                     {{ svg_close_menu() }}
                 </button>
             </div>
@@ -38,10 +38,10 @@
         <div class="thumbnail-middle" id="thumbnail-middle">
             <div class="hidden_inf thumbnail-button-container">
                 <div class="switch-flex">
-                    <button id="thumbnail-screenshot-button">
+                    <button id="thumbnail-screenshot-button" data-action="screenshot">
                         {{ svg_screenshot() }}
                     </button>
-                    <button id="thumbnail-clear-button">
+                    <button id="thumbnail-clear-button" data-action="clear-screenshot">
                         {{ svg_clear_canvas() }}
                     </button>
                 </div>
@@ -78,7 +78,7 @@
     </div>
     {% from "macros/svg_macros.html" import svg_restore_transform, svg_clear_canvas, 
         svg_close_menu, svg_switch_construct, svg_switch_overview, svg_play_start_button,
-        svg_file %}
+        svg_file, svg_book %}
     <div id="container_menu">
         <button class="menu-button-item" data-action="switch-construct">
             {{ svg_switch_construct() }}
@@ -97,6 +97,9 @@
         </button>
         <button class="menu-button-item" data-action="switch-file">
             {{ svg_file() }}
+        </button>
+        <button class="menu-button-item" data-action="switch-record">
+            {{ svg_book() }}
         </button>
     </div>
     
@@ -137,32 +140,68 @@
             <div id="floating-bar-elements" class="row-direction">
             </div>
         </div>
-        
-        <div id="mobile-information"></div>
     </div>
-    
+
+    {% from "macros/svg_macros.html" import svg_add, svg_sub %}
     <!-- 浏览面板 -->
     <div id="overviewPanel" class="panel">
         <div class="panel-container" id="geometry-item-list">
-            <p>几何元素一览</p>
-            <select id="overview-select">
-                <option value="all">All</option>
-                <option value="hidden">Hidden</option>
-                <option value="initial">Initial</option>
-                <option value="movepoints">Movepoints</option>
-                <option value="result">Result</option>
-                <option value="explore">Explore</option>
-            </select>
-            <hr>
+            <div class="overview-title" id="overview-title">
+                <div>几何元素一览</div>
+                <div class="overview-result">
+                    解数量：
+                    <button class="overview-svg-button" data-action="result-number-add">
+                        {{ svg_add() }}
+                    </button>
+                    <span id="overview-result-number">1</span>
+                    <button class="overview-svg-button" data-action="result-number-sub">
+                        {{ svg_sub() }}
+                    </button>
+                </div>
+                <div class="overview-list-target">
+                    选择器：
+                    <div class="dropdown-wrapper">
+                        <div class="dropdown-trigger" id="dropdownTriggerChoice" data-action="overview-list">
+                            <span class="placeholder">请选择一项</span>
+                            <span class="icon">▼</span>
+                        </div>
+                        
+                        <div class="dropdown-menu" id="dropdownMenuChoice">
+                            <!-- 选项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div id="container_overview"></div>
         </div>
         <div class="item-container" id="geometry-item"></div>
     </div>
 
+    <!-- 记录面板 -->
+    {% from "macros/svg_macros.html" import svg_add, svg_delete %}
+    <div id="recordPanel" class="panel">
+        <div class="panel-container">
+            <div class="panel-container">
+                <div class="head-item">
+                    <button class="storage-panel-button" id="storage-panel-button-add" data-action="add-record">
+                        {{ svg_add() }}
+                    </button>
+                    <button class="storage-panel-button" id="storage-panel-button-delete" data-action="delete-record">
+                        {{ svg_delete() }}
+                    </button>
+                    <button class="storage-panel-button" id="storage-panel-button-cover" data-action="cover-record">
+                        {{ svg_redo_button() }}
+                    </button>
+                </div>
+            </div>
+            <div class="panel-container" id="storage-item-list"></div>
+        </div>
+    </div>
+
     {% from "macros/svg_macros.html" import svg_file_load, svg_file_down, svg_screenshot %}
     <!-- 文件面板 -->
     <div id="filePanel" class="panel">
-        <div class="panel-container">
+        <div class="panel-container filePanel">
             <!-- 标题栏 -->
             <div class="file-title">文件面板</div>
             <!-- 处理栏 -->
@@ -172,6 +211,7 @@
                     <div class="file-trans-icon">
                         {{ svg_file_load() }}
                     </div>
+                    <p class="file-trans-text-stress">导入文件会覆盖当前内容</p>
                     <p class="file-trans-text">支持.gmt文件格式</p>
                 </div>
                 <!-- 文件导出 -->
@@ -179,14 +219,34 @@
                     <div class="file-trans-icon">
                         {{ svg_file_down() }}
                     </div>
-                    <p class="file-trans-text">导出为.gmt文件格式</p>
+                    <div class="dropdown-wrapper">
+                        <div class="dropdown-trigger" id="dropdownTriggerFileDown">
+                            <span class="placeholder">请选择一项</span>
+                            <span class="icon">▼</span>
+                        </div>
+                        
+                        <div class="dropdown-menu" id="dropdownMenuFileDown">
+                            <!-- 选项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    <p class="file-trans-text">导出为<span id="file-down-text-type">.gmt</span>文件格式</p>
                 </div>
                 <!-- 其他导出 -->
                 <div class="file-zone" data-action="file-part-down">
                     <div class="file-trans-icon">
                         {{ svg_screenshot() }}
                     </div>
-                    <p class="file-trans-text">截图导出为.png文件格式</p>
+                    <div class="dropdown-wrapper">
+                        <div class="dropdown-trigger" id="dropdownTriggerFilePartDown">
+                            <span class="placeholder">请选择一项</span>
+                            <span class="icon">▼</span>
+                        </div>
+                        
+                        <div class="dropdown-menu" id="dropdownMenuFilePartDown">
+                            <!-- 选项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    <p class="file-trans-text">截图导出为<span id="file-part-down-text-type">.png</span>文件格式</p>
                 </div>
             </div>
         </div>
@@ -198,6 +258,9 @@
         <div id="file-information-button">确定</div>
     </div>
     <div class="file-information-masks" id="file-information-masks"></div>
+
+    <!-- 信息框 -->
+    <div class="information" id="information"></div>
     
     <!-- 预定义所有SVG -->
     {% from "macros/svg_macros.html" import svg_move_view, svg_any_geometry, 
@@ -215,7 +278,7 @@
             'threePointCircle', 'ray', 'lineSegment', 'threePointAngleBisector', 
             'twoPoints', 'style', 'twoPointsMiddlePoint', 'circleCenter', 
             'threePointCompass', 'compassCopy', 'choicePoint', 'twoLineAngleBisector',
-            'back'] %}
+            'back', 'edit'] %}
         <template id="svg-{{ tool_name }}">
             <!-- 工具 -->
             {{ svg_move_tool() if tool_name == 'move' }}
@@ -254,6 +317,7 @@
             
             <!-- 其它 -->
             {{ svg_back_button() if tool_name == 'back' }}
+            {{ svg_switch_edit_button() if tool_name == 'edit' }}
         </template>
         {% endfor %}
     </div>
@@ -281,5 +345,6 @@
     <script src="{{ url_for('static', filename='js/tool.js') }}"></script>
     <script src="{{ url_for('static', filename='js/geometryItem.js') }}"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/information.js') }}"></script>
 </body>
 </html>
