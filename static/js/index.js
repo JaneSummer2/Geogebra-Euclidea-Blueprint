@@ -1,14 +1,29 @@
 /* index.js */
 /*
-数据交互
+文件结构
 
-geometry.js
-GeometryElementManager
-
-toolsFunction.js
-getLineBounds
-myRound
+initial
+canvasClip
+recordStorage
+canvasEvent
+menu
+toolbar
+playStart
+file
+thumbnail
+storage
+dropdown
+dataLoad
 */
+
+// initial
+/**
+ * 读取程序状态
+ * @returns {string}
+ */
+function programmeStatus() {
+    return 'design';
+}
 
 // 浏览器视口变化
 const EQUIPMENT_WIDTH = {
@@ -74,6 +89,7 @@ let geometryElementLists = {
     explore: new Set(),
     rules: new Set(),
 };
+geometryManager.geometryElementLists = geometryElementLists;
 
 // 工具
 const tools = {
@@ -122,6 +138,7 @@ let resultNumber = 1;
 
 
 
+// canvasClip
 let canvasClipState = false;
 let canvasClippingState = false;
 let highlightX = 0;
@@ -157,6 +174,7 @@ function canvasClipEnd(event) {
 
 
 
+// recordStorage
 let recordStorage = []; // recordId:string[]
 // record: dict{id, name, geometryElement, storage, thumbnail, geometryElementLists}
 /**
@@ -182,7 +200,7 @@ function loadRecordStorageDE() {
         recordItemDE.setAttribute('data-id', dict.id);
         
         const indexTextDE = document.createElement("div");
-        indexTextDE.innerText = index;
+        indexTextDE.textContent = index;
         indexTextDE.setAttribute("id", `record-${dict.id}-index`);
         indexTextDE.setAttribute('data-action', `choice`);
         indexTextDE.setAttribute('data-id', dict.id);
@@ -190,7 +208,7 @@ function loadRecordStorageDE() {
         recordItemDE.appendChild(indexTextDE);
         
         const nameTextDE = document.createElement("div");
-        nameTextDE.innerText = dict.name;
+        nameTextDE.textContent = dict.name;
         nameTextDE.setAttribute("id", `record-${dict.id}-name`);
         nameTextDE.setAttribute('data-action', `choice`);
         nameTextDE.setAttribute('data-id', dict.id);
@@ -268,7 +286,7 @@ function recordPanel(event) {
         }else{
             thumbnail.title_input = null;
         }
-        const body_inf = document.getElementById("body_inf")?.innerText;
+        const body_inf = document.getElementById("body_inf")?.textContent;
         if (body_inf) {
             thumbnail.body_input = body_inf;
         }else{
@@ -331,7 +349,7 @@ function recordPanel(event) {
         if (!name) return;
         const recordId = event.target.dataset.id;
         const recordNameDE = document.getElementById(`record-${recordId}-name`);
-        recordNameDE.innerText = name;
+        recordNameDE.textContent = name;
         const recordDict = JSON.parse(localStorage.getItem(recordId));
         recordDict.name = name;
         localStorage.setItem(recordId, JSON.stringify(recordDict));
@@ -382,7 +400,7 @@ function recordPanel(event) {
             }else{
                 thumbnail.title_input = null;
             }
-            const body_inf = document.getElementById("body_inf")?.innerText;
+            const body_inf = document.getElementById("body_inf")?.textContent;
             if (body_inf) {
                 thumbnail.body_input = body_inf;
             }else{
@@ -432,12 +450,13 @@ function recordPanel(event) {
             pictureDE.id = 'thumbnail-picture';
             pictureDE.src = thumbnail.thumbnailSrc;
             pictureDE.alt = "此处放置缩略图";
-            const container = document.getElementById('thumbnail-middle');
+            const container = document.getElementById('thumbnail-picture-frame');
             container.appendChild(pictureDE);
         }
         
         // 选定栏
         const geometryElementListsLoad = dict.geometryElementLists;
+        clearLists();
         for (const [key, value] of Object.entries(geometryElementListsLoad)) {
             geometryElementLists[key] = new Set(value);
         }
@@ -455,6 +474,7 @@ function recordPanel(event) {
 
 
 
+// canvasEvent
 /**
  * 触摸事件开始 过程函数
  * @param {Object} e 事件
@@ -778,6 +798,8 @@ function wheelEventFunction(e) {
     refreshToolFloating();
 }
 
+
+
 // 电脑端：滚轮水平滚动
 document.getElementById('container_toolbar').addEventListener('wheel', (e) => {
     e.preventDefault(); // 阻止默认垂直滚动
@@ -798,8 +820,6 @@ document.getElementById('floating-bar-elements').addEventListener('wheel', (e) =
     e.preventDefault(); // 阻止默认垂直滚动
     document.getElementById('floating-bar-elements').scrollLeft += e.deltaY * 1.5; // 使用垂直滚轮量控制水平滚动
 });
-
-
 
 /**
  * 限制存储 过程函数
@@ -838,6 +858,22 @@ function resetTransform() {
 }
 
 
+
+// menu
+/**
+ * 更多栏点击
+ * @param {Object} e 事件
+ */
+function morebarChoice(e) {
+    const action = e.target.getAttribute("data-action");
+    if (action === "open-menu") {
+        openMenu();
+    }else if (action === "restore") {
+        restoreStorage();
+    }else if (action === "redo") {
+        redoStorage();
+    }
+}
 
 /**
  * 打开菜单
@@ -891,6 +927,39 @@ function switchPanel(panel) {
 }
 
 /**
+ * 菜单栏点击
+ * @param {Object} e 事件
+ */
+function menuChoice(e) {
+    const action = e.target.getAttribute("data-action");
+    if (action === "clear-canvas") {
+        const result = confirm("确认清除吗？");
+        if (result) {
+            clearCanvas();
+            storageManager.clear();
+            storageManager.append(geometryManager.toStorage());
+            refreshStorageButton();
+            clearLists();
+        }
+    }else if (action === "close-menu") {
+        closeMenu();
+    }else if (action === "switch-construct") {
+        switchPanel("toolbarPanel");
+    }else if (action === "switch-overview") {
+        switchPanel("overviewPanel");
+    }else if (action === "switch-file") {
+        switchPanel("filePanel");
+    }else if (action === "switch-record") {
+        switchPanel("recordPanel");
+    }else if (action === "play-start") {
+        playStart();
+    }
+}
+
+
+
+// toolbar
+/**
  * 工具菜单栏点击
  * @param {Object} e 事件
  */
@@ -923,51 +992,9 @@ function toolSwitchChoice(e) {
     }
 }
 
-/**
- * 更多栏点击
- * @param {Object} e 事件
- */
-function morebarChoice(e) {
-    const action = e.target.getAttribute("data-action");
-    if (action === "open-menu") {
-        openMenu();
-    }else if (action === "restore") {
-        restoreStorage();
-    }else if (action === "redo") {
-        redoStorage();
-    }
-}
 
-/**
- * 菜单栏点击
- * @param {Object} e 事件
- */
-function menuChoice(e) {
-    const action = e.target.getAttribute("data-action");
-    if (action === "clear-canvas") {
-        const result = confirm("确认清除吗？");
-        if (result) {
-            clearCanvas();
-            storageManager.clear();
-            storageManager.append(geometryManager.toStorage());
-            refreshStorageButton();
-            clearLists();
-        }
-    }else if (action === "close-menu") {
-        closeMenu();
-    }else if (action === "switch-construct") {
-        switchPanel("toolbarPanel");
-    }else if (action === "switch-overview") {
-        switchPanel("overviewPanel");
-    }else if (action === "switch-file") {
-        switchPanel("filePanel");
-    }else if (action === "switch-record") {
-        switchPanel("recordPanel");
-    }else if (action === "play-start") {
-        playStart();
-    }
-}
 
+// playStart
 /**
  * 游玩开始
  */
@@ -1031,6 +1058,7 @@ function dataTransfer() {
 
 
 
+// file
 /**
  * 文件面板点击
  * @param {Event} event 
@@ -1137,7 +1165,7 @@ function fileLoadError(event) {
     text2DE.setAttribute('class', 'text2DE');
     text2DE.addEventListener('click', openFileImformationModal);
     const modal = document.getElementById('file-information-container');
-    modal.innerText = event?.detail?.message;
+    modal.textContent = event?.detail?.message;
     fileProcessInformation.appendChild(text2DE);
 
     setTimeout(() => {
@@ -1175,6 +1203,7 @@ function closeFileImformationModal(event) {
 
 
 
+// thumbnail
 document.getElementById("thumbnail").addEventListener("click", thumbnailOpen);
 /**
  * 打开缩略图
@@ -1268,7 +1297,7 @@ function screenshot(highlightX, highlightY, highlightWidth, highlightHeight) {
         canvas2.remove();
     }, 100);
 
-    const container = document.getElementById('thumbnail-middle');
+    const container = document.getElementById('thumbnail-picture-frame');
     container.appendChild(pictureDE);
 }
 
@@ -1285,6 +1314,7 @@ function clearScreenshot() {
 
 
 
+// storage
 /**
  * 刷新存储按钮
  */
@@ -1333,12 +1363,13 @@ function storage() {
 
 
 
+// dropdown
 function overviewTitleClick(event) {
     const action = event.target?.dataset?.action;
     if (action === 'result-number-add') {
         resultNumber++;
         const resultNumberDE = document.getElementById('overview-result-number');
-        resultNumberDE.innerText = resultNumber;
+        resultNumberDE.textContent = resultNumber;
 
         const newResult = `result-${resultNumber}`;
         geometryElementLists[newResult] = new Set();
@@ -1355,7 +1386,7 @@ function overviewTitleClick(event) {
 
         resultNumber--;
         const resultNumberDE = document.getElementById('overview-result-number');
-        resultNumberDE.innerText = resultNumber;
+        resultNumberDE.textContent = resultNumber;
     }
 }
 
@@ -1380,10 +1411,21 @@ const dropdownDEDict = {
     fileDown: [dropdownTriggerFileDown, dropdownMenuFileDown],
     filePartDown: [dropdownTriggerFilePartDown, dropdownMenuFilePartDown],
 }
-const dropdownValueDict = {
+let dropdownValueDict = {
     choice: [Object.keys(geometryElementLists)[0], geometryElementLists],
     fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
     filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+}
+
+/**
+ * 手动刷新下拉栏值
+ */
+function refreshDropdownValueDict() {
+    dropdownValueDict = {
+        choice: [Object.keys(geometryElementLists)[0], geometryElementLists],
+        fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
+        filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+    }
 }
 
 // 初始化下拉菜单选项
@@ -1447,10 +1489,10 @@ function updateSelect(index, item) {
         updateSelectChoice(item);
     }else if (index === 'fileDown') {
         const spanDE = document.getElementById('file-down-text-type');
-        spanDE.innerText = `.${item}`;
+        spanDE.textContent = `.${item}`;
     }else if (index === 'filePartDown') {
         const spanDE = document.getElementById('file-part-down-text-type');
-        spanDE.innerText = `.${item}`;
+        spanDE.textContent = `.${item}`;
     }
 }
 
@@ -1539,6 +1581,7 @@ function dropdownRefresh() {
     for (const [index, dropdownDE] of Object.entries(dropdownDEDict)) {
         initDropdownOptions(index);
         
+        refreshDropdownValueDict();
         const dropdownDict = dropdownValueDict[index][1];
         // 默认选择第一项
         setTimeout(() => {
@@ -1549,6 +1592,7 @@ function dropdownRefresh() {
 
 
 
+// dataLoad
 /**
  * 数据加载
  */
@@ -1576,13 +1620,14 @@ function dataLoad() {
             pictureDE.id = 'thumbnail-picture';
             pictureDE.src = thumbnail.pictureData;
             pictureDE.alt = "此处放置缩略图";
-            const container = document.getElementById('thumbnail-middle');
+            const container = document.getElementById('thumbnail-picture-frame');
             container.appendChild(pictureDE);
         }
     }
     
     // 选定栏
     const geometryElementListsJSON = sessionStorage.getItem('geometryElementLists');
+    clearLists();
     if (geometryElementListsJSON) {
         const geometryElementListsLoad = JSON.parse(geometryElementListsJSON);
         for (const [key, value] of Object.entries(geometryElementListsLoad)) {

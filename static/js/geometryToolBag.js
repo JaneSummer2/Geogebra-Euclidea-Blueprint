@@ -97,7 +97,8 @@ class PointTool {
             if (element1.getType() === "line") {
                 if (element2.getType() === "line") {
                     const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
-                    if (!flagValue) return;
+                    const flag = flagValue.flag;
+                    if (!flag) return;
                     const coord = flagValue.value;
                     goalX = coord.x;
                     goalY = coord.y;
@@ -295,7 +296,8 @@ class PointTool {
             if (element1.getType() === "line") {
                 if (element2.getType() === "line") {
                     const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
-                    if (!flagValue) return;
+                    const flag = flagValue.flag;
+                    if (!flag) return;
                     const coord = flagValue.value;
                     goalX = coord.x;
                     goalY = coord.y;

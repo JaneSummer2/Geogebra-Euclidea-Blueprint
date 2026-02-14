@@ -1,4 +1,31 @@
 /* playPage.js */
+/*
+文件结构
+
+initial
+movesCounter
+recordStorage
+canvasEvent
+menu
+toolbar
+exploreMode
+designMode
+thumbnail
+storage
+file
+dropdown
+dataLoad
+resultVerify
+*/
+
+// initial
+/**
+ * 读取程序状态
+ * @returns {string}
+ */
+function programmeStatus() {
+    return 'play';
+}
 
 // 浏览器视口变化
 const EQUIPMENT_WIDTH = {
@@ -60,16 +87,69 @@ const storageManagerExplore = new StorageManager();
 const movesStorageManagerExplore = new MovesStorageManager();
 let storageManager = storageManagerResult;
 let movesStorageManager = movesStorageManagerResult;
-const geometryElementLists = {
+let geometryElementLists = {
+    all: new Set(),
     hidden: new Set(),
     initial: new Set(),
     name: new Set(),
     movepoints: new Set(),
-    result: new Set(),
+    'result-1': new Set(),
+    'completedShow-1': new Set(),
     explore: new Set(),
+    rules: new Set(),
+    itemHidden: new Set(),
 };
-geometryManagerResult.geometryElementLists = geometryElementLists;
-geometryManagerExplore.geometryElementLists = geometryElementLists;
+function clearLists() {
+    geometryElementLists = {
+        all: new Set(),
+        hidden: new Set(),
+        initial: new Set(),
+        name: new Set(),
+        movepoints: new Set(),
+        'result-1': new Set(),
+        'completedShow-1': new Set(),
+        explore: new Set(),
+        rules: new Set(),
+        itemHidden: new Set(),
+    };
+}
+
+let displayId = [];
+const playCanvasDisplay = ['initial'];
+let goldGoalCanvasDisplay = [];
+let playGoldCanvasDisplay = [];
+/**
+ * 设定图形显示
+ * @param {string[]} list 
+ */
+function canvasDisplay(list) {
+    goldGoalCanvasDisplay = list;
+    playGoldCanvasDisplay = playCanvasDisplay.concat(goldGoalCanvasDisplay);
+    let idSet = new Set();
+    for (const value of playGoldCanvasDisplay) {
+        const currentSet = geometryElementLists[value];
+        idSet = new Set([...idSet, ...currentSet]);
+    }
+    const displayIdCache = [...idSet];
+    showHiddenFigure(displayIdCache);
+    displayId = displayIdCache;
+}
+function showHiddenFigure(listId) {
+    const currentSet = new Set(listId);
+    const statusSet = new Set(displayId);
+    // 多出来的 -> 展示
+    //const addSet = currentSet.difference(statusSet);
+    for (const item of currentSet) {
+        const element = geometryManager.get(item);
+        element.modifyVisible(true);
+    }
+    // 少的 -> 隐藏
+    const subSet = statusSet.difference(currentSet);
+    for (const item of subSet) {
+        const element = geometryManager.get(item);
+        element.modifyVisible(false);
+    }
+}
 
 // 工具
 const tools = {
@@ -100,14 +180,20 @@ function getStart() {
 
 // 面板状态
 let panelState;
+let loadFlag = false;
+let completeOnce = false;
+let goldGoal = [];
 
+
+
+// movesCounter
 const movesCounter = {
     e: 0,
     l: 0,
 };
 
 const movesCounterDE = document.getElementById("moves");
-movesCounterDE.innerText = '0L 0E';
+movesCounterDE.textContent = '0L 0E';
 
 /* 刷新步数 */
 function refreshMovesCounterByTool(event) {
@@ -150,7 +236,7 @@ function refreshMovesCounterByTool(event) {
     
     movesCounter.e = movesE;
     movesCounter.l = movesL;
-    movesCounterDE.innerText = `${movesL}L ${movesE}E`;
+    movesCounterDE.textContent = `${movesL}L ${movesE}E`;
     movesStorageManager.append(movesCounter);
 }
 
@@ -167,17 +253,18 @@ function refreshMovesCounterByRestore(moves, flag) {
         movesCounter.e = movesE + moves.e;
         movesCounter.l = movesL + moves.l;
     }
-    movesCounterDE.innerText = `${movesL}L ${movesE}E`;
+    movesCounterDE.textContent = `${movesL}L ${movesE}E`;
 }
 
 /* 刷新步数 */
 function refreshMovesCounter() {
     const oriMoves = movesStorageManager.get();
-    movesCounterDE.innerText = `${oriMoves.l}L ${oriMoves.e}E`;
+    movesCounterDE.textContent = `${oriMoves.l}L ${oriMoves.e}E`;
 }
 
 
 
+// recordStorage
 let recordStoragePlay = []; // recordId:string[]
 // record: dict{id, name, geometryElement, storage, thumbnail, geometryElementLists}
 /**
@@ -203,7 +290,7 @@ function loadRecordStorageDE() {
         recordItemDE.setAttribute('data-id', dict.id);
         
         const indexTextDE = document.createElement("div");
-        indexTextDE.innerText = index;
+        indexTextDE.textContent = index;
         indexTextDE.setAttribute("id", `record-${dict.id}-index`);
         indexTextDE.setAttribute('data-action', `choice`);
         indexTextDE.setAttribute('data-id', dict.id);
@@ -211,7 +298,7 @@ function loadRecordStorageDE() {
         recordItemDE.appendChild(indexTextDE);
         
         const nameTextDE = document.createElement("div");
-        nameTextDE.innerText = dict.name;
+        nameTextDE.textContent = dict.name;
         nameTextDE.setAttribute("id", `record-${dict.id}-name`);
         nameTextDE.setAttribute('data-action', `choice`);
         nameTextDE.setAttribute('data-id', dict.id);
@@ -291,7 +378,7 @@ function recordPanel(event) {
         if (!name) return;
         const recordId = event.target.dataset.id;
         const recordNameDE = document.getElementById(`record-${recordId}-name`);
-        recordNameDE.innerText = name;
+        recordNameDE.textContent = name;
         const recordDict = JSON.parse(localStorage.getItem(recordId));
         recordDict.name = name;
         localStorage.setItem(recordId, JSON.stringify(recordDict));
@@ -342,7 +429,7 @@ function recordPanel(event) {
             }else{
                 thumbnail.title_input = null;
             }
-            const body_inf = document.getElementById("body_inf")?.innerText;
+            const body_inf = document.getElementById("body_inf")?.textContent;
             if (body_inf) {
                 thumbnail.body_input = body_inf;
             }else{
@@ -392,12 +479,13 @@ function recordPanel(event) {
             pictureDE.id = 'thumbnail-picture';
             pictureDE.src = thumbnail.thumbnailSrc;
             pictureDE.alt = "此处放置缩略图";
-            const container = document.getElementById('thumbnail-middle');
+            const container = document.getElementById('thumbnail-picture-frame');
             container.appendChild(pictureDE);
         }
         
         // 选定栏
         const geometryElementListsLoad = dict.geometryElementLists;
+        clearLists();
         for (const [key, value] of Object.entries(geometryElementListsLoad)) {
             geometryElementLists[key] = new Set(value);
         }
@@ -446,7 +534,7 @@ function addRecord() {
     }else{
         thumbnail.title_input = null;
     }
-    const body_inf = document.getElementById("body_inf")?.innerText;
+    const body_inf = document.getElementById("body_inf")?.textContent;
     if (body_inf) {
         thumbnail.body_input = body_inf;
     }else{
@@ -482,6 +570,7 @@ function addRecord() {
 
 
 
+// canvasEvent
 /**
  * 触摸事件开始 过程函数
  * @param {Object} e 事件
@@ -770,6 +859,8 @@ function wheelEventFunction(e) {
     refreshToolFloating();
 }
 
+
+
 // 电脑端：滚轮水平滚动
 document.getElementById('container_toolbar').addEventListener('wheel', (e) => {
     e.preventDefault(); // 阻止默认垂直滚动
@@ -785,8 +876,6 @@ document.getElementById('floating-bar-elements').addEventListener('wheel', (e) =
     e.preventDefault(); // 阻止默认垂直滚动
     document.getElementById('floating-bar-elements').scrollLeft += e.deltaY * 1.5; // 使用垂直滚轮量控制水平滚动
 });
-
-
 
 /**
  * 限制存储 过程函数
@@ -825,6 +914,61 @@ function resetTransform() {
 }
 
 
+
+// menu
+/**
+ * 更多栏点击
+ * @param {Object} e 事件
+ */
+function morebarChoice(e) {
+    const action = e.target.getAttribute("data-action");
+    if (action === "open-menu") {
+        openMenu();
+    }else if (action === "restore") {
+        restoreStorage();
+        resultVerify();
+    }else if (action === "redo") {
+        redoStorage();
+        resultVerify();
+    }
+}
+
+/**
+ * 菜单栏点击
+ * @param {Object} e 事件
+ */
+function menuChoice(e) {
+    const action = e.target.getAttribute("data-action");
+    if (action === "clear-canvas") {
+        const result = confirm("确认重新开始吗？");
+        if (result) {
+            clearCanvas();
+            geometryManagerResult.deleteAll();
+            geometryManagerExplore.deleteAll();
+            loadGeometryElementsStorage();
+            unsuccess();
+            storageManager.clear();
+            storageManager.append(geometryManager.getAllByOrder());
+            movesStorageManager.clear();
+            movesStorageManager.append({e: 0, l: 0});
+            refreshStorageButton();
+        }
+    }else if (action === "close-menu") {
+        closeMenu();
+    }else if (action === "switch-construct") {
+        switchPanel("toolbarPanel");
+    }else if (action === "switch-overview") {
+        switchPanel("overviewPanel");
+    }else if (action === "design-mode") {
+        designMode();
+    }else if (action === "switch-record") {
+        switchPanel("recordPanel");
+    }else if (action === "explore-mode") {
+        exploreMode();
+    }else if (action === "switch-file") {
+        switchPanel("filePanel");
+    }
+}
 
 /**
  * 打开菜单
@@ -879,6 +1023,9 @@ function switchPanel(panel) {
     }
 }
 
+
+
+// toolbar
 /**
  * 工具栏点击
  * @param {Object} e 事件
@@ -902,58 +1049,9 @@ function toolSwitchChoice(e) {
     }
 }
 
-/**
- * 更多栏点击
- * @param {Object} e 事件
- */
-function morebarChoice(e) {
-    const action = e.target.getAttribute("data-action");
-    if (action === "open-menu") {
-        openMenu();
-    }else if (action === "restore") {
-        restoreStorage();
-        resultVerify();
-    }else if (action === "redo") {
-        redoStorage();
-        resultVerify();
-    }
-}
 
-/**
- * 菜单栏点击
- * @param {Object} e 事件
- */
-function menuChoice(e) {
-    const action = e.target.getAttribute("data-action");
-    if (action === "clear-canvas") {
-        const result = confirm("确认重新开始吗？");
-        if (result) {
-            clearCanvas();
-            loadGeometryElementsStorage();
-            drawContent();
-            storageManager.clear();
-            storageManager.append(geometryManager.getAllByOrder());
-            movesStorageManager.clear();
-            movesStorageManager.append({e: 0, l: 0});
-            refreshStorageButton();
-        }
-    }else if (action === "close-menu") {
-        closeMenu();
-    }else if (action === "switch-construct") {
-        switchPanel("toolbarPanel");
-    }else if (action === "switch-overview") {
-        switchPanel("overviewPanel");
-    }else if (action === "design-mode") {
-        designMode();
-    }else if (action === "switch-record") {
-        switchPanel("recordPanel");
-    }else if (action === "explore-mode") {
-        exploreMode();
-    }else if (action === "switch-file") {
-        switchPanel("filePanel");
-    }
-}
 
+// exploreMode
 let exploreFlag = false;
 /**
  * 探索模式
@@ -968,12 +1066,9 @@ function exploreMode() {
         // 按钮变色
         const buttonDE = document.getElementById('menu-button-item');
         buttonDE.classList.remove('active');
-        // 几何对象隐藏
-        const ids = geometryElementLists.explore;
-        ids.forEach((id) => {
-            const element = geometryManager.get(id);
-            element.modifyVisible(false);
-        });
+        // 几何对象
+        canvasDisplay(goldGoal);
+        canvasGoldGoal(goldGoal);
         drawContent();
         refreshStorageButton();
         refreshMovesCounter();
@@ -987,18 +1082,18 @@ function exploreMode() {
         // 按钮变色
         const buttonDE = document.getElementById('menu-button-item');
         buttonDE.classList.add('active');
-        // 几何对象显示
-        const ids = geometryElementLists.explore;
-        ids.forEach((id) => {
-            const element = geometryManager.get(id);
-            element.modifyVisible(true);
-        });
+        // 几何对象
+        canvasDisplay(['explore']);
+        canvasGoldGoal(['explore']);
         drawContent();
         refreshStorageButton();
         refreshMovesCounter();
     }
 }
 
+
+
+// designMode
 /**
  * 设计模式
  */
@@ -1012,6 +1107,9 @@ function designMode() {
     }, 3000);
 }
 
+
+
+// thumbnail
 document.getElementById("thumbnail").addEventListener("click", thumbnailOpen);
 /**
  * 打开缩略图
@@ -1045,6 +1143,7 @@ function thumbnailClose() {
 
 
 
+// storage
 /**
  * 刷新存储按钮
  */
@@ -1066,7 +1165,7 @@ function restoreStorage() {
     const elements = storageManager.restore();
     if (elements) geometryManager.loadStorage(elements);
     refreshStorageButton();
-    drawContent();
+    resultVerify();
     const moves = movesStorageManager.restore();
     refreshMovesCounterByRestore(moves, 'restore');
 }
@@ -1081,7 +1180,7 @@ function redoStorage() {
     const elements = storageManager.redo();
     if (elements) geometryManager.loadStorage(elements);
     refreshStorageButton();
-    drawContent();
+    resultVerify();
     const moves = movesStorageManager.redo();
     refreshMovesCounterByRestore(moves, 'redo');
 }
@@ -1101,6 +1200,7 @@ function storage() {
 
 
 
+// file
 const geometryElementListsChoice = {
     all: 'all',
     hidden: 'all',
@@ -1184,10 +1284,10 @@ function updateSelect(index, item) {
         updateSelectChoice(item);
     }else if (index === 'fileDown') {
         const spanDE = document.getElementById('file-down-text-type');
-        spanDE.innerText = `.${item}`;
+        spanDE.textContent = `.${item}`;
     }else if (index === 'filePartDown') {
         const spanDE = document.getElementById('file-part-down-text-type');
-        spanDE.innerText = `.${item}`;
+        spanDE.textContent = `.${item}`;
     }
 }
 
@@ -1284,8 +1384,6 @@ function dropdownRefresh() {
     }
 }
 
-
-
 /**
  * 文件面板点击
  * @param {Event} event 
@@ -1299,6 +1397,7 @@ function filePanelClick(event) {
 
 
 
+// dataLoad
 /**
  * 数据加载
  */
@@ -1308,7 +1407,7 @@ function playStartDataLoad() {
     if (thumbnailJSON) {
         const thumbnail = JSON.parse(thumbnailJSON);
         document.getElementById("title_inf").textContent = thumbnail.title_input;
-        document.getElementById("body_inf").innerText = thumbnail.body_input;
+        document.getElementById("body_inf").textContent = thumbnail.body_input;
         document.getElementById("bottom_inf").textContent = thumbnail.bottom_input;
 
         if (thumbnail.pictureData) {
@@ -1316,21 +1415,18 @@ function playStartDataLoad() {
             pictureDE.id = 'thumbnail-picture';
             pictureDE.src = thumbnail.pictureData;
             pictureDE.alt = "此处放置缩略图";
-            const container = document.getElementById('thumbnail-middle');
+            const container = document.getElementById('thumbnail-picture-frame');
             container.appendChild(pictureDE);
         }
     }
     
     // 选定栏
     const geometryElementListsJSON = sessionStorage.getItem('geometryElementLists');
+    clearLists();
     if (geometryElementListsJSON) {
         const geometryElementListsLoad = JSON.parse(geometryElementListsJSON);
         for (const [key, value] of Object.entries(geometryElementListsLoad)) {
-            if (key === 'explore' && value.length === 0) {
-                geometryElementLists[key] = new Set(geometryElementListsLoad.result);
-            }else{
-                geometryElementLists[key] = new Set(value);
-            }
+            geometryElementLists[key] = new Set(value);
         }
     }
 
@@ -1351,15 +1447,33 @@ function loadGeometryElementsStorage() {
             const element = deserialization(item);
             geometryManagerResult.addObject(element);
             geometryManagerExplore.addObject(element);
-            if (geometryElementLists.initial.has(item.id)) {
-                element.modifyColor("#191919");
-            }else if (geometryElementLists.movepoints.has(item.id)) {
-                element.modifyColor('#0099ff');
-            }else if (geometryElementLists.result.has(item.id)) {
-                element.modifyColor('#ffd700');
-            }else if (geometryElementLists.explore.has(item.id)) {
-                element.modifyColor('#ffd700');
-            }else{
+            const elementId = item.id;
+
+            // 选择列表涂色
+            let findFlag = false;
+            for (const listKey of Object.keys(geometryElementLists)) {
+                const frontName = listKey.split('-')[0];
+                if (geometryElementLists[listKey].has(elementId)) {
+                    if (frontName === 'initial') {
+                        element.modifyColor("#191919");
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'movepoints') {
+                        element.modifyColor('#0099ff');
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'completedShow') {
+                        element.modifyColor('#ffd700');
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'explore') {
+                        element.modifyColor('#ffd700');
+                        findFlag = true;
+                        break;
+                    }
+                }
+            }
+            if (!findFlag) {
                 element.modifyColor(item.color);
             }
         });
@@ -1387,6 +1501,10 @@ function loadGeometryElementsStorage() {
             }
         }
 
+        loadFlag = true;
+        geometryManagerResult.geometryElementLists = geometryElementLists;
+        geometryManagerExplore.geometryElementLists = geometryElementLists;
+        canvasDisplay([]);
         drawContent();
     }
     
@@ -1409,11 +1527,7 @@ function loadGeometryElementsStorage() {
             element = new Circle(id);
         }
 
-        if (geometryElementLists.initial.has(id)) {
-            element.modifyVisible(true);
-        }else{
-            element.modifyVisible(false);
-        }
+        element.modifyVisible(false);
         if (geometryElementLists.name.has(id)) {
             element.modifyShowName(true);
         }else{
@@ -1422,58 +1536,95 @@ function loadGeometryElementsStorage() {
         element.modifyName(name);
         element.modifyValid(valid);
         element.modifyColor(color);
+
+        // 加载时把其他划分到元素隐藏列表
+        const flag = geometryElementLists.initial.has(id) ||
+            geometryElementLists.movepoints.has(id) ||
+            geometryElementLists.name.has(id);
+        if (!flag) geometryElementLists.itemHidden.add(id);
         return element;
     }
 }
 
+
+
+// resultVerify
 /**
  * 几何对象同一判定
  * @returns {Promise} bool
  */
 function resultVerifyFunction() {
     return new Promise((resolve) => {
-        const result = new Set();
-        const length = geometryElementLists.result.size;
-        geometryElementLists.result.forEach((id) => {
-            const resultElement = geometryManager.get(id);
-            const resultType = resultElement.getType();
-            if (resultType === 'point') {
-                const elements = geometryManager.getAllByOrder();
-                for (const element of elements) {
-                    const type = element.getType();
-                    if (type !== 'point') continue;
-                    const bool = ToolsFunction.pointEquative(resultElement, element);
-                    if (bool) {
-                        result.add(id);
+        // 检测前初始化
+        goldGoal = [];
+        for (const listName of Object.keys(geometryElementLists)) {
+            const frontName = listName.split('-')[0];
+            if (frontName !== 'result') continue;
+            
+            const result = new Set();
+            const length = geometryElementLists[listName].size;
+            geometryElementLists[listName].forEach((id) => {
+                const resultElement = geometryManager.get(id);
+                const resultType = resultElement.getType();
+                if (resultType === 'point') {
+                    const elements = geometryManager.getAllByOrder();
+                    for (const element of elements) {
+                        // 类型判定
+                        const type = element.getType();
+                        if (type !== 'point') continue;
+                        // 自身判定
+                        const id2 = element.getId();
+                        if (!geometryElementLists.initial.has(id2)) {
+                            if (id === id2) continue;
+                        }
+                        // 位置判定
+                        const bool = ToolsFunction.pointEquative(resultElement, element);
+                        if (bool) {
+                            result.add(id);
+                        }
+                    }
+                }else if (resultType === 'line') {
+                    const elements = geometryManager.getAllByOrder();
+                    for (const element of elements) {
+                        // 类型判定
+                        const type = element.getType();
+                        if (type !== 'line') continue;
+                        // 自身判定
+                        const id2 = element.getId();
+                        if (!geometryElementLists.initial.has(id2)) {
+                            if (id === id2) continue;
+                        }
+                        // 位置判定
+                        const bool = ToolsFunction.lineEquative(resultElement, element);
+                        if (bool) {
+                            result.add(id);
+                        }
+                    }
+                }else if (resultType === 'circle') {
+                    const elements = geometryManager.getAllByOrder();
+                    for (const element of elements) {
+                        // 类型判定
+                        const type = element.getType();
+                        if (type !== 'circle') continue;
+                        // 自身判定
+                        const id2 = element.getId();
+                        if (!geometryElementLists.initial.has(id2)) {
+                            if (id === id2) continue;
+                        }
+                        // 位置判定
+                        const bool = ToolsFunction.circleEquative(resultElement, element);
+                        if (bool) {
+                            result.add(id);
+                        }
                     }
                 }
-            }else if (resultType === 'line') {
-                const elements = geometryManager.getAllByOrder();
-                for (const element of elements) {
-                    const type = element.getType();
-                    if (type !== 'line') continue;
-                    const id2 = element.getId();
-                    if (id === id2) continue;
-                    const bool = ToolsFunction.lineEquative(resultElement, element);
-                    if (bool) {
-                        result.add(id);
-                    }
-                }
-            }else if (resultType === 'circle') {
-                const elements = geometryManager.getAllByOrder();
-                for (const element of elements) {
-                    const type = element.getType();
-                    if (type !== 'circle') continue;
-                    const id2 = element.getId();
-                    if (id === id2) continue;
-                    const bool = ToolsFunction.circleEquative(resultElement, element);
-                    if (bool) {
-                        result.add(id);
-                    }
-                }
+            });
+            if (result.size === length && result.size !== 0) {
+                goldGoal.push(listName);
             }
-        });
-        if (result.size === length) {
+        }
+
+        if (goldGoal.length !== 0) {
             resolve(true);
         }else{
             resolve(false);
@@ -1486,6 +1637,7 @@ function resultVerifyFunction() {
  */
 async function resultVerify() {
     if (exploreFlag) return;
+
     const bool = await resultVerifyFunction();
     if (bool) {
         // 触发成功事件
@@ -1508,25 +1660,25 @@ function success() {
     moves.style.color = '#ffd700';
     moves.style.setProperty('font-weight', 'bold');
 
-    // 几何对象显示
-    const resultIds = geometryElementLists.result;
-    resultIds.forEach((id) => {
-        const element = geometryManager.get(id);
-        element.modifyVisible(true);
-    });
-
     // 消息提示
-    const pop = document.getElementById('complete-layout');
-    pop.classList.add('trans');
-    setTimeout(() => {
-        pop.classList.remove('trans');
-    }, 5000);
+    if (!completeOnce) {
+        const pop = document.getElementById('complete-layout');
+        pop.classList.add('trans');
+        setTimeout(() => {
+            pop.classList.remove('trans');
+        }, 5000);
+    }
 
     // 重绘
+    canvasGoldGoal(goldGoal);
+    canvasDisplay(goldGoal);
     drawContent();
 
-    //添加存储
-    addRecord();
+    // 添加存储
+    if (!completeOnce) addRecord();
+
+    // 改变标志
+    completeOnce = true;
 }
 
 window.addEventListener("unsuccess", unsuccess);
@@ -1539,14 +1691,9 @@ function unsuccess() {
     moves.style.color = '#000000';
     moves.style.setProperty('font-weight', 'normal');
 
-    // 几何对象隐藏
-    const resultIds = geometryElementLists.result;
-    resultIds.forEach((id) => {
-        const element = geometryManager.get(id);
-        element.modifyVisible(false);
-    });
-
     // 重绘
+    canvasGoldGoal(goldGoal);
+    canvasDisplay(goldGoal);
     drawContent();
 }
 
@@ -1576,9 +1723,13 @@ function DOMLoaded() {
     document.getElementById("filePanel").addEventListener("click", filePanelClick);
     document.getElementById("recordPanel").addEventListener("click", recordPanel);
     // 初始化
+    playInit();
+}
+function playInit() {
     dropdownInit();
     updateLayout();
     resizeCanvas();
+    canvasGoldGoal([]);
     drawContent();
     switchPanel("toolbarPanel");
     refreshStorageButton();

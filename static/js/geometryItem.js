@@ -345,11 +345,11 @@ function selectElementByOverview(event) {
 
         const textNode = document.createElement('p');
         if (type === "point") {
-            textNode.innerText = '点';
+            textNode.textContent = '点';
         }else if (type === "line") {
-            textNode.innerText = '线';
+            textNode.textContent = '线';
         }else if (type === "circle") {
-            textNode.innerText = '圆';
+            textNode.textContent = '圆';
         }
         dataItem.appendChild(textNode);
 
@@ -376,11 +376,11 @@ function selectElementByOverview(event) {
 
         const textNode = document.createElement('p');
         if (type === "point") {
-            textNode.innerText = '点';
+            textNode.textContent = '点';
         }else if (type === "line") {
-            textNode.innerText = '线';
+            textNode.textContent = '线';
         }else if (type === "circle") {
-            textNode.innerText = '圆';
+            textNode.textContent = '圆';
         }
         dataItem.appendChild(textNode);
 
@@ -390,11 +390,11 @@ function selectElementByOverview(event) {
         dataItem.appendChild(inputDE);
 
         const textNode2 = document.createElement('p');
-        textNode2.innerText = 'id';
+        textNode2.textContent = 'id';
         dataItem.appendChild(textNode2);
 
         const textNode3 = document.createElement('p');
-        textNode3.innerText = element.getId();
+        textNode3.textContent = element.getId();
         dataItem.appendChild(textNode3);
         
         return dataItem;
@@ -405,11 +405,11 @@ function selectElementByOverview(event) {
         dataItem.className = "item-container-row";
 
         const textNode = document.createElement('p');
-        textNode.innerText = 'id';
+        textNode.textContent = 'id';
         dataItem.appendChild(textNode);
 
         const textNode2 = document.createElement('p');
-        textNode2.innerText = element.getId();
+        textNode2.textContent = element.getId();
         dataItem.appendChild(textNode2);
         
         return dataItem;
@@ -422,7 +422,7 @@ function selectElementByOverview(event) {
         const elementBase = element.getBase();
 
         const textNode = document.createElement('p');
-        textNode.innerText = 'x';
+        textNode.textContent = 'x';
         dataItem.appendChild(textNode);
 
         const inputDE = document.createElement('input');
@@ -432,7 +432,7 @@ function selectElementByOverview(event) {
         dataItem.appendChild(inputDE);
 
         const textNode2 = document.createElement('p');
-        textNode2.innerText = 'y';
+        textNode2.textContent = 'y';
         dataItem.appendChild(textNode2);
 
         const inputDE2 = document.createElement('input');
@@ -456,26 +456,26 @@ function selectElementByOverview(event) {
 
         let textNode = document.createElement('p');
         if (type === "line") {
-            textNode.innerText = '点1';
+            textNode.textContent = '点1';
         }else if (type === "circle") {
-            textNode.innerText = '圆心';
+            textNode.textContent = '圆心';
         }
         dataItem1.appendChild(textNode);
 
         textNode = document.createElement('p');
-        textNode.innerText = coordList[0];
+        textNode.textContent = coordList[0];
         dataItem1.appendChild(textNode);
         
         textNode = document.createElement('p');
         if (type === "line") {
-            textNode.innerText = '点2';
+            textNode.textContent = '点2';
         }else if (type === "circle") {
-            textNode.innerText = '圆上点';
+            textNode.textContent = '圆上点';
         }
         dataItem2.appendChild(textNode);
 
         textNode = document.createElement('p');
-        textNode.innerText = coordList[1];
+        textNode.textContent = coordList[1];
         dataItem2.appendChild(textNode);
         
         dataItem.appendChild(dataItem1);
@@ -493,11 +493,11 @@ function selectElementByOverview(event) {
         dataItem1.className = "item-container-row";
 
         const textNode = document.createElement('p');
-        textNode.innerText = '基底';
+        textNode.textContent = '基底';
         dataItem1.appendChild(textNode);
 
         const textNode2 = document.createElement('p');
-        textNode2.innerText = elementBase.type;
+        textNode2.textContent = elementBase.type;
         dataItem1.appendChild(textNode2);
 
         dataItem.appendChild(dataItem1);
@@ -514,12 +514,12 @@ function selectElementByOverview(event) {
 
             bases.forEach((item) => {
                 const textNode = document.createElement('p');
-                textNode.innerText = item.getId();
+                textNode.textContent = item.getId();
                 dataItem2.appendChild(textNode);
             });
 
             const textNode = document.createElement('p');
-            textNode.innerText = '值';
+            textNode.textContent = '值';
             dataItem2.appendChild(textNode);
 
             const inputDE = document.createElement('input');
@@ -538,7 +538,7 @@ function selectElementByOverview(event) {
         dataItem.className = "item-container-row";
 
         const textNode = document.createElement('p');
-        textNode.innerText = '显示';
+        textNode.textContent = '显示';
         dataItem.appendChild(textNode);
 
         const inputDE = document.createElement('input');
@@ -548,7 +548,7 @@ function selectElementByOverview(event) {
         dataItem.appendChild(inputDE);
 
         const textNode2 = document.createElement('p');
-        textNode2.innerText = '显示名称';
+        textNode2.textContent = '显示名称';
         dataItem.appendChild(textNode2);
 
         const inputDE2 = document.createElement('input');
@@ -565,7 +565,7 @@ function selectElementByOverview(event) {
         dataItem.className = "item-container-row";
 
         const textNode = document.createElement('p');
-        textNode.innerText = '颜色';
+        textNode.textContent = '颜色';
         dataItem.appendChild(textNode);
         
         const inputDE = document.createElement('input');
@@ -582,14 +582,14 @@ function selectElementByOverview(event) {
         dataItem.className = "item-container-row";
 
         const textNode = document.createElement('p');
-        textNode.innerText = '有效性';
+        textNode.textContent = '有效性';
         dataItem.appendChild(textNode);
 
         const textNode2 = document.createElement('p');
         if (element.getValid()) {
-            textNode2.innerText = '有效';
+            textNode2.textContent = '有效';
         }else{
-            textNode2.innerText = '无效';
+            textNode2.textContent = '无效';
         }
         dataItem.appendChild(textNode2);
         
@@ -606,17 +606,17 @@ function selectElementByOverview(event) {
         const superstructure = element.getSuperstructure();
 
         const textNode = document.createElement('p');
-        textNode.innerText = '上层构造';
+        textNode.textContent = '上层构造';
         dataItem1.appendChild(textNode);
 
         if (superstructure.length === 0) {
             const textNode = document.createElement('p');
-            textNode.innerText = '无';
+            textNode.textContent = '无';
             dataItem2.appendChild(textNode);
         }else{
             superstructure.forEach((item) => {
                 const textNode = document.createElement('p');
-                textNode.innerText = item.getId();
+                textNode.textContent = item.getId();
                 dataItem2.appendChild(textNode);
             });
         }

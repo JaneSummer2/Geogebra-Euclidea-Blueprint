@@ -495,18 +495,8 @@ class GeometryElementManager {
         this.counter = {"total": 0};
         this.choice = new Object();
         this.transform = {x: 0, y: 0, scale: 1};
-        this.geometryStyle = {point: {colorChoice: "auto", color: "#191919"}, 
-            line: {colorChoice: "auto", color: "#191919"}, 
-            circle: {colorChoice: "auto", color: "#191919"}
-        };
-        this.geometryElementLists = {
-            hidden: new Set(),
-            initial: new Set(),
-            name: new Set(),
-            movepoints: new Set(),
-            result: new Set(),
-            explore: new Set(),
-        };
+        this.geometryStyle = {};
+        this.geometryElementLists = {};
     }
     
     /**
@@ -576,10 +566,8 @@ class GeometryElementManager {
         const dict = new Object();
         const points = new Array();
         const exceptPoints = new Array();
-        const resultPoints = new Array();
         const pointsCache = new Array();
         const exceptPointsCache = new Array();
-        const resultexceptPoints = new Array();
         const choice = new Array();
         
         // 实有对象
@@ -587,19 +575,9 @@ class GeometryElementManager {
         list.forEach((element) => {
             const type = element.getType();
             if (type === "point") {
-                const id = element.getId();
-                if (geometryElementLists['result-1'].has(id) || geometryElementLists.explore.has(id)) {
-                    resultPoints.push(element);
-                }else{
-                    points.push(element);
-                }
+                points.push(element);
             }else{
-                const id = element.getId();
-                if (geometryElementLists['result-1'].has(id) || geometryElementLists.explore.has(id)) {
-                    resultexceptPoints.push(element);
-                }else{
-                    exceptPoints.push(element);
-                }
+                exceptPoints.push(element);
             }
         });
         
@@ -624,9 +602,42 @@ class GeometryElementManager {
         dict['exceptPointsCache'] = exceptPointsCache;
         dict['points'] = points;
         dict['pointsCache'] = pointsCache;
-        dict['resultPoints'] = resultPoints;
-        dict['resultexceptPoints'] = resultexceptPoints;
         dict["choice"] = choice;
+        
+        return dict;
+    }
+
+    /**
+     * 以列表返回对象
+     * @param {string[]} list 列表名称
+     * @returns {{points: Object[], exceptPoints: Object[]}}
+     */
+    getByList(list) {
+        const dict = new Object();
+        const points = new Array();
+        const exceptPoints = new Array();
+        
+        // 列表元素整理去重
+        let setList = new Set();
+        for (const listName of list) {
+            const figures = this.geometryElementLists[listName];
+            setList = new Set([...setList, ...figures]);
+        }
+
+        // 元素添加
+        let list2 = [...setList];
+        list2.forEach((elementId) => {
+            const element = this.get(elementId);
+            const type = element.getType();
+            if (type === "point") {
+                points.push(element);
+            }else{
+                exceptPoints.push(element);
+            }
+        });
+        
+        dict['exceptPoints'] = exceptPoints;
+        dict['points'] = points;
         
         return dict;
     }
@@ -690,7 +701,7 @@ class GeometryElementManager {
         }else if (object.getType() === "circle") {
             if (this.geometryStyle.circle.colorChoice === "autoPlayMode") object.modifyColor("#808080");
         }
-        
+
         // 添加对象
         this.repository[id] = object;
         // 增加计数器
@@ -1013,24 +1024,75 @@ class GeometryElementManager {
         const minDistance = 15 / this.transform.scale;
         const container = new Array();
         const [x, y] = coord;
-    
+        
         for (const element of Object.values(this.repository)) {
+            // 表满弹出
             if (container.length >= maxQuote) return container;
+            // 不选择无效和隐藏图形
             if (!element.getValid()) continue;
             if (!element.getVisible()) continue;
             
+            // 添加元素
             const type = element.getType();
             if (type === "point" && types.includes("point")) {
                 const id = nearPoint(x, y, element, minDistance);
+                if (!id) continue;
+                // 忽略已有ID
                 if (ignore.includes(id)) continue;
+                // 忽略重叠
+                let overlapFlag = false;
+                for	(const listElementId of container) {
+                    const listElement = this.get(listElementId);
+                    const listElementType = listElement.getType();
+                    if (listElementType !== 'point') continue;
+                    const currentElement = this.get(id);
+                    const flag = ToolsFunction.pointEquative(listElement, currentElement);
+                    if (flag) {
+                        overlapFlag = true;
+                        break;
+                    }
+                }
+                if (overlapFlag) continue;
                 if (id) container.push(id);
             }else if (type === "line" && types.includes("line")) {
                 const id = nearLine(x, y, element, minDistance);
+                if (!id) continue;
+                // 忽略已有ID
                 if (ignore.includes(id)) continue;
+                // 忽略重叠
+                let overlapFlag = false;
+                for	(const listElementId of container) {
+                    const listElement = this.get(listElementId);
+                    const listElementType = listElement.getType();
+                    if (listElementType !== 'line') continue;
+                    const currentElement = this.get(id);
+                    const flag = ToolsFunction.lineEquative(listElement, currentElement);
+                    if (flag) {
+                        overlapFlag = true;
+                        break;
+                    }
+                }
+                if (overlapFlag) continue;
                 if (id) container.push(id);
             }else if (type === "circle" && types.includes("circle")) {
                 const id = nearCircle(x, y, element, minDistance);
+                if (!id) continue;
+                // 忽略已有ID
                 if (ignore.includes(id)) continue;
+                // 忽略重叠
+                let overlapFlag = false;
+                for	(const listElementId of container) {
+                    const listElement = this.get(listElementId);
+                    const listElementType = listElement.getType();
+                    if (listElementType !== 'circle') continue;
+                    const currentElement = this.get(id);
+                    const flag = ToolsFunction.circleEquative(listElement, currentElement);
+                    if (flag) {
+                        overlapFlag = true;
+                        break;
+                    }
+                }
+                if (overlapFlag) continue;
                 if (id) container.push(id);
             }
         }
@@ -1444,16 +1506,33 @@ class GeometryElementManager {
             const id = element.getId();
             const color = element.getColor();
             this.addObject(element);
-            if (this.geometryElementLists.initial.has(id)) {
-                element.modifyColor("#191919");
-            }else if (this.geometryElementLists.movepoints.has(item.id)) {
-                element.modifyColor('#0099ff');
-            }else if (this.geometryElementLists.result.has(item.id)) {
-                element.modifyColor('#ffd700');
-            }else if (this.geometryElementLists.explore.has(item.id)) {
-                element.modifyColor('#ffd700');
-            }else{
-                element.modifyColor(color);
+
+            // 选择列表涂色
+            let findFlag = false;
+            for (const listKey of Object.keys(geometryElementLists)) {
+                const frontName = listKey.split('-')[0];
+                if (geometryElementLists[listKey].has(id)) {
+                    if (frontName === 'initial') {
+                        element.modifyColor("#191919");
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'movepoints') {
+                        element.modifyColor('#0099ff');
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'completedShow') {
+                        element.modifyColor('#ffd700');
+                        findFlag = true;
+                        break;
+                    }else if (frontName === 'explore') {
+                        element.modifyColor('#ffd700');
+                        findFlag = true;
+                        break;
+                    }
+                }
+            }
+            if (!findFlag) {
+                element.modifyColor(item.color);
             }
         }
 

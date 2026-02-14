@@ -177,18 +177,32 @@ function drawStrokedText(ctx, text, x, y, fillColor, strokeColor, lineWidth) {
     ctx.restore();
 }
 
+let goldGoalCanvas = [];
+/**
+ * 设定金色图形显示
+ * @param {string[]} list 
+ */
+function canvasGoldGoal(list) {
+    goldGoalCanvas = list;
+}
 /**
  * 绘制几何图形 过程函数
  */
 function drawShapes() {
+    const mode = programmeStatus();
     const geometryElements = geometryManager.getAllByType(tool);
     const exceptPoints = geometryElements['exceptPoints'];
     const exceptPointsCache = geometryElements['exceptPointsCache'];
-    const resultexceptPoints = geometryElements['resultexceptPoints'];
     const points = geometryElements['points'];
     const pointsCache = geometryElements['pointsCache'];
-    const resultPoints = geometryElements['resultPoints'];
     const choice = geometryElements['choice'];
+    let resultPoints = [];
+    let resultexceptPoints = [];
+    if (mode === 'play') {
+        const goldFigures = geometryManager.getByList(goldGoalCanvas);
+        resultPoints = goldFigures.points;
+        resultexceptPoints = goldFigures.exceptPoints;
+    }
     
     // 除了点的几何对象
     for (const element of exceptPoints) {
@@ -501,9 +515,6 @@ function drawChoiceCircle(element) {
 function clearCanvas() {
     geometryManager.deleteAll();
     drawContent();
-    lineToolStatus = 0;
-    circleToolStatus = 0;
-    intersectionToolStatus = 0;
     refreshToolFloating();
 }
 
