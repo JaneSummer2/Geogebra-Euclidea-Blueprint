@@ -849,7 +849,7 @@ class ToolsFunction {
     
     /**
      * 以基底更新交点坐标
-     * @param {{type: string, bases: Object[], value: number}} define
+     * @param {{type: string, bases: Object[], value: number, exclude: string}} define
      * @returns {{valid: boolean, coordinate: [x, y]}}
      */
     static updateIntersectionCoordinate(define) {
@@ -861,6 +861,18 @@ class ToolsFunction {
         const element1Type = element1.getType();
         const element2Type = element2.getType();
         const index = define.value;
+
+        // 排除点
+        let excludeFlag = false;
+        let excludeElementX = 0, excludeElementY = 0;
+        if (Object.keys(define).includes('exclude')) {
+            const excludeElementId = define.exclude;
+            const excludeElement = geometryManager.get(excludeElementId);
+            if (excludeElement) {
+                [excludeElementX, excludeElementY] = excludeElement.getCoordinate();
+                excludeFlag = true;
+            }
+        }
         
         if (element1Type === "line") {
             if (element2Type === "line") {
@@ -881,8 +893,21 @@ class ToolsFunction {
                     const coord = countValue.value[0];
                     return {valid: true, coordinate: [coord.x, coord.y]};
                 }else if (count === 2) {
-                    var coord = countValue.value[index];
-                    return {valid: true, coordinate: [coord.x, coord.y]};
+                    if (!excludeFlag) {
+                        const coord = countValue.value[index];
+                        return {valid: true, coordinate: [coord.x, coord.y]};
+                    }else{
+                        const [coord1, coord2] = countValue.value;
+                        const excludeElementCoordinate = {x: excludeElementX, y: excludeElementY};
+                        const distance1 = ToolsFunction.distance(excludeElementCoordinate, coord1);
+                        const distance2 = ToolsFunction.distance(excludeElementCoordinate, coord2);
+                        if (distance1 < distance2) {
+                            // 排除点在第1点
+                            return {valid: true, coordinate: [coord2.x, coord2.y]};
+                        }else{
+                            return {valid: true, coordinate: [coord1.x, coord1.y]};
+                        }
+                    }
                 }
             }
         }else if (element1Type === "circle") {
@@ -895,8 +920,21 @@ class ToolsFunction {
                     const coord = countValue.value[0];
                     return {valid: true, coordinate: [coord.x, coord.y]};
                 }else if (count === 2) {
-                    var coord = countValue.value[index];
-                    return {valid: true, coordinate: [coord.x, coord.y]};
+                    if (!excludeFlag) {
+                        const coord = countValue.value[index];
+                        return {valid: true, coordinate: [coord.x, coord.y]};
+                    }else{
+                        const [coord1, coord2] = countValue.value;
+                        const excludeElementCoordinate = {x: excludeElementX, y: excludeElementY};
+                        const distance1 = ToolsFunction.distance(excludeElementCoordinate, coord1);
+                        const distance2 = ToolsFunction.distance(excludeElementCoordinate, coord2);
+                        if (distance1 < distance2) {
+                            // 排除点在第1点
+                            return {valid: true, coordinate: [coord2.x, coord2.y]};
+                        }else{
+                            return {valid: true, coordinate: [coord1.x, coord1.y]};
+                        }
+                    }
                 }
             }else if (element2Type === "circle") {
                 const countValue = ToolsFunction.circleCircleIntersectionByGeometryObject(element1, element2);
@@ -907,8 +945,21 @@ class ToolsFunction {
                     const coord = countValue.value[0];
                     return {valid: true, coordinate: [coord.x, coord.y]};
                 }else if (count === 2) {
-                    var coord = countValue.value[index];
-                    return {valid: true, coordinate: [coord.x, coord.y]};
+                    if (!excludeFlag) {
+                        const coord = countValue.value[index];
+                        return {valid: true, coordinate: [coord.x, coord.y]};
+                    }else{
+                        const [coord1, coord2] = countValue.value;
+                        const excludeElementCoordinate = {x: excludeElementX, y: excludeElementY};
+                        const distance1 = ToolsFunction.distance(excludeElementCoordinate, coord1);
+                        const distance2 = ToolsFunction.distance(excludeElementCoordinate, coord2);
+                        if (distance1 < distance2) {
+                            // 排除点在第1点
+                            return {valid: true, coordinate: [coord2.x, coord2.y]};
+                        }else{
+                            return {valid: true, coordinate: [coord1.x, coord1.y]};
+                        }
+                    }
                 }
             }
         }
@@ -938,7 +989,7 @@ class ToolsFunction {
 
     /**
      * 更新点坐标
-     * @param {{type: string, bases: Object[], value: number}} define
+     * @param {{type: string, bases: Object[], value: number, exclude: string}} define
      * @returns {{type: string, coordinate: [x, y] | null}}
      */
     static updatePointCoordinate(define) {

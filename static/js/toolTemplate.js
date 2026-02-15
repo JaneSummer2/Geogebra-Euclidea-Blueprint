@@ -155,6 +155,9 @@ class PointBaseToolTemplate {
         if (exceptPoints.length === 2) {
             const element1 = geometryManager.get(exceptPoints[0]);
             const element2 = geometryManager.get(exceptPoints[1]);
+            // 已有点判定
+            const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
             if (element1.getType() === "line") {
                 if (element2.getType() === "line") {
                     const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
@@ -233,11 +236,21 @@ class PointBaseToolTemplate {
                 }
             }
             
-            const pointObject = geometryManager.createPoint(goalX, goalY);
-            pointObject.modifyBase("intersection", [element1, element2], index);
-            element1.addSuperstructure(pointObject);
-            element2.addSuperstructure(pointObject);
-            geometryManager.addToolObject(this.toolName, `point${this.status + 1}`, "append", pointObject);
+            if (!excludeFlag) {
+                const pointObject = geometryManager.createPoint(goalX, goalY);
+                pointObject.modifyBase("intersection", [element1, element2], index);
+                element1.addSuperstructure(pointObject);
+                element2.addSuperstructure(pointObject);
+                geometryManager.addToolObject(this.toolName, `point${this.status + 1}`, "append", pointObject);
+            }else{
+                const element12Union = [...element12UnionSet];
+                const excludeElementId = element12Union[0].getId();
+                const pointObject = geometryManager.createPoint(goalX, goalY);
+                pointObject.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                element1.addSuperstructure(pointObject);
+                element2.addSuperstructure(pointObject);
+                geometryManager.addToolObject(this.toolName, `point${this.status + 1}`, "append", pointObject);
+            }
             
         }else if (exceptPoints.length === 1) {
             let value;
@@ -281,6 +294,42 @@ class PointBaseToolTemplate {
             const pointObject = geometryManager.createPoint(goalX, goalY);
             geometryManager.addToolObject(this.toolName, `point${this.status + 1}`, "append", pointObject);
         }
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
+            }
+        }
     }
     
     /**
@@ -320,6 +369,9 @@ class PointBaseToolTemplate {
                 
                 const element1 = geometryManager.get(exceptPoints[0]);
                 const element2 = geometryManager.get(exceptPoints[1]);
+                // 已有点判定
+                const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                 if (element1.getType() === "line") {
                     if (element2.getType() === "line") {
                         const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
@@ -357,10 +409,18 @@ class PointBaseToolTemplate {
                             const coord = countValue.value[index];
                             goalX = coord.x;
                             goalY = coord.y;
-                            
-                            point.modifyBase("intersection", [element1, element2], index);
-                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+
+                            if (!excludeFlag) {
+                                point.modifyBase("intersection", [element1, element2], index);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }else{
+                                const element12Union = [...element12UnionSet];
+                                const excludeElementId = element12Union[0].getId();
+                                point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }
                             
                         }
                     }
@@ -390,9 +450,17 @@ class PointBaseToolTemplate {
                             goalX = coord.x;
                             goalY = coord.y;
                             
-                            point.modifyBase("intersection", [element1, element2], index);
-                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            if (!excludeFlag) {
+                                point.modifyBase("intersection", [element1, element2], index);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }else{
+                                const element12Union = [...element12UnionSet];
+                                const excludeElementId = element12Union[0].getId();
+                                point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }
                             
                         }
                     }else if (element2.getType() === "circle") {
@@ -420,9 +488,17 @@ class PointBaseToolTemplate {
                             goalX = coord.x;
                             goalY = coord.y;
                             
-                            point.modifyBase("intersection", [element1, element2], index);
-                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            if (!excludeFlag) {
+                                point.modifyBase("intersection", [element1, element2], index);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }else{
+                                const element12Union = [...element12UnionSet];
+                                const excludeElementId = element12Union[0].getId();
+                                point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                                geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                                geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                            }
                             
                         }
                     }
@@ -477,6 +553,42 @@ class PointBaseToolTemplate {
             if (this.changedVerify !== "move") {
                 this.changedVerify = "move";
                 this.setDefine();
+            }
+        }
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
             }
         }
     }
@@ -952,6 +1064,9 @@ class MixPointBaseToolTemplate {
             
             const element1 = geometryManager.get(exceptPoints[0]);
             const element2 = geometryManager.get(exceptPoints[1]);
+            // 已有点判定
+            const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
             if (element1.getType() === "line") {
                 if (element2.getType() === "line") {
                     const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
@@ -1037,12 +1152,22 @@ class MixPointBaseToolTemplate {
                     }
                 }
             }
-            
-            const pointObject = geometryManager.createPoint(goalX, goalY);
-            pointObject.modifyBase("intersection", [element1, element2], index);
-            element1.addSuperstructure(pointObject);
-            element2.addSuperstructure(pointObject);
-            geometryManager.addToolObject(this.toolName, "point", "append", pointObject);
+
+            if (!excludeFlag) {
+                const pointObject = geometryManager.createPoint(goalX, goalY);
+                pointObject.modifyBase("intersection", [element1, element2], index);
+                element1.addSuperstructure(pointObject);
+                element2.addSuperstructure(pointObject);
+                geometryManager.addToolObject(this.toolName, "point", "append", pointObject);
+            }else{
+                const element12Union = [...element12UnionSet];
+                const excludeElementId = element12Union[0].getId();
+                const pointObject = geometryManager.createPoint(goalX, goalY);
+                pointObject.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                element1.addSuperstructure(pointObject);
+                element2.addSuperstructure(pointObject);
+                geometryManager.addToolObject(this.toolName, "point", "append", pointObject);
+            }
 
         }else if (exceptPoints.length === 1) {
             let value;
@@ -1087,6 +1212,42 @@ class MixPointBaseToolTemplate {
         }else if (exceptPoints.length === 0) {
             const pointObject = geometryManager.createPoint(goalX, goalY);
             geometryManager.addToolObject(this.toolName, "point", "append", pointObject);
+        }
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
+            }
         }
     }
     
@@ -1148,6 +1309,9 @@ class MixPointBaseToolTemplate {
                     
                     const element1 = geometryManager.get(exceptPoints[0]);
                     const element2 = geometryManager.get(exceptPoints[1]);
+                    // 已有点判定
+                    const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                     if (element1.getType() === "line") {
                         if (element2.getType() === "line") {
                             const flagValue = ToolsFunction.lineIntersectionByGeometryObject(element1, element2);
@@ -1235,10 +1399,18 @@ class MixPointBaseToolTemplate {
                         }
                     }
                     
-                    point.modifyBase("intersection", [element1, element2], index);
-                    geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                    geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
-                                
+                    if (!excludeFlag) {
+                        point.modifyBase("intersection", [element1, element2], index);
+                        geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                        geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                    }else{
+                        const element12Union = [...element12UnionSet];
+                        const excludeElementId = element12Union[0].getId();
+                        point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                        geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                        geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                    }
+                    
                 }else if (exceptPoints.length === 1) {
                     // 吸附对象上
                     geometryManager.deleteToolKey(this.toolName, "inter1");
@@ -1350,6 +1522,42 @@ class MixPointBaseToolTemplate {
         }
 
         point.modifyCoordinate(goalX, goalY);
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
+            }
+        }
     }
     
     /**

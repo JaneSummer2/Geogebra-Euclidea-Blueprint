@@ -125,6 +125,9 @@ class PointTool {
                         geometryManager.addObject(pointObject);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -136,13 +139,22 @@ class PointTool {
                         const coord = countValue.value[index];
                         goalX = coord.x;
                         goalY = coord.y;
-                        
-                        const pointObject = geometryManager.createPoint(goalX, goalY);
-                        pointObject.modifyBase("intersection", [element1, element2], index);
-                        element1.addSuperstructure(pointObject);
-                        element2.addSuperstructure(pointObject);
-                        geometryManager.addObject(pointObject);
-                        
+
+                        if (!excludeFlag) {
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }
                     }
                 }
             }else if (element1.getType() === "circle") {
@@ -162,6 +174,9 @@ class PointTool {
                         geometryManager.addObject(pointObject);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -173,13 +188,22 @@ class PointTool {
                         const coord = countValue.value[index];
                         goalX = coord.x;
                         goalY = coord.y;
-                        
-                        const pointObject = geometryManager.createPoint(goalX, goalY);
-                        pointObject.modifyBase("intersection", [element1, element2], index);
-                        element1.addSuperstructure(pointObject);
-                        element2.addSuperstructure(pointObject);
-                        geometryManager.addObject(pointObject);
-                        
+
+                        if (!excludeFlag) {
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }
                     }
                 }else if (element2.getType() === "circle") {
                     const countValue = ToolsFunction.circleCircleIntersectionByGeometryObject(element1, element2);
@@ -197,6 +221,9 @@ class PointTool {
                         geometryManager.addObject(pointObject);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -209,11 +236,21 @@ class PointTool {
                         goalX = coord.x;
                         goalY = coord.y;
                         
-                        const pointObject = geometryManager.createPoint(goalX, goalY);
-                        pointObject.modifyBase("intersection", [element1, element2], index);
-                        element1.addSuperstructure(pointObject);
-                        element2.addSuperstructure(pointObject);
-                        geometryManager.addObject(pointObject);
+                        if (!excludeFlag) {
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            const pointObject = geometryManager.createPoint(goalX, goalY);
+                            pointObject.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            element1.addSuperstructure(pointObject);
+                            element2.addSuperstructure(pointObject);
+                            geometryManager.addObject(pointObject);
+                        }
                     }
                 }
             }
@@ -263,6 +300,42 @@ class PointTool {
         }else if (exceptPoints.length === 0) {
             const pointObject = geometryManager.createPoint(goalX, goalY);
             geometryManager.addObject(pointObject);
+        }
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
+            }
         }
     }
     
@@ -320,6 +393,9 @@ class PointTool {
                         geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -332,10 +408,17 @@ class PointTool {
                         goalX = coord.x;
                         goalY = coord.y;
                         
-                        point.modifyBase("intersection", [element1, element2], index);
-                        geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                        geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
-                        
+                        if (!excludeFlag) {
+                            point.modifyBase("intersection", [element1, element2], index);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }
                     }
                 }
             }else if (element1.getType() === "circle") {
@@ -353,6 +436,9 @@ class PointTool {
                         geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -365,10 +451,17 @@ class PointTool {
                         goalX = coord.x;
                         goalY = coord.y;
                         
-                        point.modifyBase("intersection", [element1, element2], index);
-                        geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                        geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
-                        
+                        if (!excludeFlag) {
+                            point.modifyBase("intersection", [element1, element2], index);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }
                     }
                 }else if (element2.getType() === "circle") {
                     const countValue = ToolsFunction.circleCircleIntersectionByGeometryObject(element1, element2);
@@ -384,6 +477,9 @@ class PointTool {
                         geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
                         
                     }else if (countValue.count === 2) {
+                        // 已有点判定
+                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
                         const p3 = {x, y};
@@ -396,10 +492,17 @@ class PointTool {
                         goalX = coord.x;
                         goalY = coord.y;
                         
-                        point.modifyBase("intersection", [element1, element2], index);
-                        geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
-                        geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
-                        
+                        if (!excludeFlag) {
+                            point.modifyBase("intersection", [element1, element2], index);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }else{
+                            const element12Union = [...element12UnionSet];
+                            const excludeElementId = element12Union[0].getId();
+                            point.modifyBase("intersection", [element1, element2], index, excludeElementId);
+                            geometryManager.addToolObject(this.toolName, "inter1", "quote", exceptPoints[0]);
+                            geometryManager.addToolObject(this.toolName, "inter2", "quote", exceptPoints[1]);
+                        }
                     }
                 }
             }
@@ -452,6 +555,42 @@ class PointTool {
             point.clearBase();
         }
         geometryManager.modifyToolObject(this.toolName, "cache", "create", [goalX, goalY]);
+
+
+        function excludePoint([element1, element2]) {
+            const element1Super = element1.getSuperstructure();
+            const element1SuperSet = new Set();
+            for (const element1SuperElement of element1Super) {
+                const type = element1SuperElement.getType();
+                if (type === 'point') element1SuperSet.add(element1SuperElement);
+            }
+            const element1Define = element1.getDefine();
+            const element1DefineSet = new Set();
+            for (const element1DefineElement of element1Define) {
+                const type = element1DefineElement.getType();
+                if (type === 'point') element1DefineSet.add(element1DefineElement);
+            }
+            const element2Super = element2.getSuperstructure();
+            const element2SuperSet = new Set();
+            for (const element2SuperElement of element2Super) {
+                const type = element2SuperElement.getType();
+                if (type === 'point') element2SuperSet.add(element2SuperElement);
+            }
+            const element2Define = element2.getDefine();
+            const element2DefineSet = new Set();
+            for (const element2DefineElement of element2Define) {
+                const type = element2DefineElement.getType();
+                if (type === 'point') element2DefineSet.add(element2DefineElement);
+            }
+            const element1Set = element1SuperSet.union(element1DefineSet);
+            const element2Set = element2SuperSet.union(element2DefineSet);
+            const element12UnionSet = element1Set.intersection(element2Set);
+            if (element12UnionSet.size !== 0) {
+                return [true, element12UnionSet];
+            }else{
+                return [false, element12UnionSet];
+            }
+        }
     }
     
     /**

@@ -1492,7 +1492,11 @@ function loadGeometryElementsStorage() {
                 objectList.push(geometryManager.get(id));
             });
             if (currentElementType === 'point') {
-                currentElement.modifyBase(basesType, objectList, bases.value);
+                if (Object.keys(bases).includes('exclude')) {
+                    currentElement.modifyBase(basesType, objectList, bases.value, bases.exclude);
+                }else{
+                    currentElement.modifyBase(basesType, objectList, bases.value);
+                }
                 objectList.forEach((item) => {
                     item.addSuperstructure(currentElement);
                 });

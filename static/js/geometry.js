@@ -49,7 +49,7 @@ class GeometryElement {
     
     /**
      * 返回上层构造
-     * 返回Array()形式
+     * @returns {Object[]}
      */
     getSuperstructure() {
         return Object.values(this.superstructure);
@@ -194,11 +194,13 @@ class Point extends GeometryElement {
      * @param {string} type 
      * @param {Object[]} geometryElements
      * @param {number} [value=0] 
+     * @param {string} [exclude=null] 
      */
-    modifyBase(type, geometryElements, value = 0) {
+    modifyBase(type, geometryElements, value = 0, exclude = null) {
         this.base.type = type;
         this.base.bases = geometryElements;
         this.base.value = value;
+        if (exclude) this.base.exclude = exclude;
         
         // 更新坐标
         this.updateCoordinate();
@@ -241,6 +243,7 @@ class Point extends GeometryElement {
             this.base.bases.forEach((item) => basesId.push(item.getId()));
             dict.base.basesId = basesId;
             dict.base.value = this.base.value;
+            dict.base.exclude = this.base.exclude;
         }
         return dict;
     }
@@ -343,6 +346,7 @@ class Line extends GeometryElement {
             this.base.figure.forEach((item) => basesId.push(item.getId()));
             dict.base.basesId = basesId;
             dict.base.value = this.base.value;
+            dict.base.exclude = this.base.exclude;
         }
         dict.drawType = this.drawType;
         return dict;
@@ -447,6 +451,7 @@ class Circle extends GeometryElement {
             this.base.figure.forEach((item) => basesId.push(item.getId()));
             dict.base.basesId = basesId;
             dict.base.value = this.base.value;
+            dict.base.exclude = this.base.exclude;
         }
         return dict;
     }
@@ -548,7 +553,7 @@ class GeometryElementManager {
     /**
      * 从ID获取对象
      * @param {string} id
-     * @returns {Object} 指定对象
+     * @returns {Object | null} 指定对象
      */
     get(id) {
         let object;
@@ -1550,7 +1555,11 @@ class GeometryElementManager {
                 objectList.push(this.get(id));
             });
             if (currentElementType === 'point') {
-                currentElement.modifyBase(basesType, objectList, bases.value);
+                if (Object.keys(bases).includes('exclude')) {
+                    currentElement.modifyBase(basesType, objectList, bases.value, bases.exclude);
+                }else{
+                    currentElement.modifyBase(basesType, objectList, bases.value);
+                }
                 objectList.forEach((item) => {
                     item.addSuperstructure(currentElement);
                 });
