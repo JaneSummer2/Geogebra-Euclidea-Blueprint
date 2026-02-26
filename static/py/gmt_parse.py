@@ -23,11 +23,13 @@ geometry_grammar = """
                    | circle
                    | circle3
                    | intersect
+                   | compass
                    | abisect
                    | perp
                    | pbisect
                    | parallel
                    | linepoint
+                   | midpoint
 
     point: "[" NUMBER "," NUMBER "]"
     segment: "Segment" "[" NAME "," NAME "]"
@@ -36,23 +38,26 @@ geometry_grammar = """
     circle: "Circle" "[" NAME "," NAME "]"
     circle3: "Circle3" "[" NAME "," NAME "," NAME "]"
     intersect: "Intersect" "[" NAME "," NAME "," FLAGNUMBER ("," NAME)? "]"
+    compass: "Compass" "[" NAME "," NAME "," NAME "]"
     abisect: "ABisect" "[" NAME "," NAME "," NAME "]"
     perp: "Perp" "[" NAME "," NAME "]"
     pbisect: "PBisect" "[" NAME "," NAME "]"
     parallel: "Parallel" "[" NAME "," NAME "]"
     linepoint: "Linepoint" "[" NAME "," NUMBER "]"
+    midpoint: "Midpoint" "[" NAME "," NAME "]"
 
     initial_statement: "initial" "=" name_list
     movepoints_statement: "movepoints" "=" name_list
-    result_statement: "result" "=" result_item ("," result_item)*
+    result_statement: "result" "=" name_list (":" name_list)?
     explore_statement: "explore" "=" name_list
     rules_statement: "rules" "=" rules_expression
-    named_statement: "named" "=" name_list
+    named_statement: "named" "=" named_list
     hidden_statement: "hidden" "=" name_list
 
     name_list: NAME ("," NAME)*
+    named_list: named ("," named)*
+    named: NAME ("." NAME)?
     rules_expression: rules_item ("," rules_item)*
-    result_item: (NAME ":")? name_list
     rules_item: intersection_condition
         | distance_condition
         | angle_condition
@@ -135,6 +140,10 @@ class GeometryTransformer(Transformer):
         return result
     
     @v_args(inline=True)
+    def compass(self, p1, p2, p3):
+        return {"type": "compass", "points": [str(p1), str(p2), str(p3)]}
+    
+    @v_args(inline=True)
     def abisect(self, p1, p2, p3):
         return {"type": "angle_bisector", "points": [str(p1), str(p2), str(p3)]}
     
@@ -154,14 +163,21 @@ class GeometryTransformer(Transformer):
     def linepoint(self, obj, ratio):
         return {"type": "line_point", "object": str(obj), "ratio": float(ratio)}
     
+    @v_args(inline=True)
+    def midpoint(self, p1, p2):
+        return {"type": "midpoint", "object": str(p1), "ratio": str(p2)}
+    
     def initial_statement(self, items):
-        return {"type": "initial", "points": items[0]}
+        return {"type": "initial", "objects": items[0]}
     
     def movepoints_statement(self, items):
         return {"type": "movepoints", "points": items[0]}
     
     def result_statement(self, items):
-        return {"type": "result", "items": items}
+        if len(items) == 2:
+            return {"type": "result", "result": items[0], "display": items[1]}
+        else:
+            return {"type": "result", "result": items[0]}
     
     def explore_statement(self, items):
         return {"type": "explore", "objects": items[0]}
@@ -206,6 +222,13 @@ class GeometryTransformer(Transformer):
 
     def name_list(self, items):
         return [str(item) for item in items]
+    
+    def named_list(self, items):
+        return items
+    
+    def named(self, token):
+        if len(token) == 1: return {"name_front": token[0], "name_back": token[0]}
+        else: return {"name_front": token[0], "name_back": token[1]}
     
     def NAME(self, token):
         return str(token)

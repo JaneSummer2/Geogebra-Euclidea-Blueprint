@@ -519,6 +519,16 @@ function selectElementByOverview(event) {
             inputDE.textContent = elementBase.value;
             dataItem2.appendChild(inputDE);
 
+            if (elementBase.exclude) {
+                const textNode2 = document.createElement('p');
+                textNode2.textContent = '排除点';
+                dataItem2.appendChild(textNode2);
+
+                const inputDE2 = document.createElement('p');
+                inputDE2.textContent = elementBase.exclude;
+                dataItem2.appendChild(inputDE2);
+            }
+
             dataItem.appendChild(dataItem2);
         }
         

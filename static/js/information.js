@@ -33,6 +33,8 @@ const infDict = {
     "dropdown-fileDown-gmt": {title: "GMT", context: "Geometry\nEuclidea的几何数据文件"},
     "dropdown-fileDown-ggb": {title: "GGB", context: "Geogebra\nGeogebra的几何数据文件"},
     "dropdown-fileDown-geb": {title: "GEB", context: "Geogebra Euclidea Blueprint\nGeogebra Euclidea Blueprint的几何数据文件"},
+    "dropdown-filePartDownType-screenshot": {title: "截图", context: "导出画布内容为图片"},
+    "dropdown-filePartDownType-thumbnail": {title: "截图加信息", context: "导出画布和信息内容合并至一张图片\n信息内容指左上角的信息框"},
     "add-record": {title: "保存纪录", context: ""},
     "delete-record": {title: "删除纪录", context: "打开/关闭删除纪录模式，点击纪录删除"},
     "cover-record": {title: "覆盖纪录", context: "打开/关闭覆盖纪录模式，点击纪录覆盖\n把目前状态覆盖至该纪录中"},

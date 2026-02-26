@@ -126,7 +126,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
 
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -175,7 +175,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
 
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -222,7 +222,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
                         
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -301,42 +301,6 @@ class PointTool {
             const pointObject = geometryManager.createPoint(goalX, goalY);
             geometryManager.addObject(pointObject);
         }
-
-
-        function excludePoint([element1, element2]) {
-            const element1Super = element1.getSuperstructure();
-            const element1SuperSet = new Set();
-            for (const element1SuperElement of element1Super) {
-                const type = element1SuperElement.getType();
-                if (type === 'point') element1SuperSet.add(element1SuperElement);
-            }
-            const element1Define = element1.getDefine();
-            const element1DefineSet = new Set();
-            for (const element1DefineElement of element1Define) {
-                const type = element1DefineElement.getType();
-                if (type === 'point') element1DefineSet.add(element1DefineElement);
-            }
-            const element2Super = element2.getSuperstructure();
-            const element2SuperSet = new Set();
-            for (const element2SuperElement of element2Super) {
-                const type = element2SuperElement.getType();
-                if (type === 'point') element2SuperSet.add(element2SuperElement);
-            }
-            const element2Define = element2.getDefine();
-            const element2DefineSet = new Set();
-            for (const element2DefineElement of element2Define) {
-                const type = element2DefineElement.getType();
-                if (type === 'point') element2DefineSet.add(element2DefineElement);
-            }
-            const element1Set = element1SuperSet.union(element1DefineSet);
-            const element2Set = element2SuperSet.union(element2DefineSet);
-            const element12UnionSet = element1Set.intersection(element2Set);
-            if (element12UnionSet.size !== 0) {
-                return [true, element12UnionSet];
-            }else{
-                return [false, element12UnionSet];
-            }
-        }
     }
     
     /**
@@ -394,7 +358,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
 
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -437,7 +401,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
 
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -478,7 +442,7 @@ class PointTool {
                         
                     }else if (countValue.count === 2) {
                         // 已有点判定
-                        const [excludeFlag, element12UnionSet] = excludePoint([element1, element2]);
+                        const [excludeFlag, element12UnionSet] = ToolsFunction.excludePoint([element1, element2]);
 
                         const coord1 = countValue.value[0];
                         const coord2 = countValue.value[1];
@@ -555,42 +519,6 @@ class PointTool {
             point.clearBase();
         }
         geometryManager.modifyToolObject(this.toolName, "cache", "create", [goalX, goalY]);
-
-
-        function excludePoint([element1, element2]) {
-            const element1Super = element1.getSuperstructure();
-            const element1SuperSet = new Set();
-            for (const element1SuperElement of element1Super) {
-                const type = element1SuperElement.getType();
-                if (type === 'point') element1SuperSet.add(element1SuperElement);
-            }
-            const element1Define = element1.getDefine();
-            const element1DefineSet = new Set();
-            for (const element1DefineElement of element1Define) {
-                const type = element1DefineElement.getType();
-                if (type === 'point') element1DefineSet.add(element1DefineElement);
-            }
-            const element2Super = element2.getSuperstructure();
-            const element2SuperSet = new Set();
-            for (const element2SuperElement of element2Super) {
-                const type = element2SuperElement.getType();
-                if (type === 'point') element2SuperSet.add(element2SuperElement);
-            }
-            const element2Define = element2.getDefine();
-            const element2DefineSet = new Set();
-            for (const element2DefineElement of element2Define) {
-                const type = element2DefineElement.getType();
-                if (type === 'point') element2DefineSet.add(element2DefineElement);
-            }
-            const element1Set = element1SuperSet.union(element1DefineSet);
-            const element2Set = element2SuperSet.union(element2DefineSet);
-            const element12UnionSet = element1Set.intersection(element2Set);
-            if (element12UnionSet.size !== 0) {
-                return [true, element12UnionSet];
-            }else{
-                return [false, element12UnionSet];
-            }
-        }
     }
     
     /**

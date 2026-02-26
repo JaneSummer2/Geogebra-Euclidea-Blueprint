@@ -935,11 +935,7 @@ function menuChoice(e) {
     if (action === "clear-canvas") {
         const result = confirm("确认清除吗？");
         if (result) {
-            clearCanvas();
-            storageManager.clear();
-            storageManager.append(geometryManager.toStorage());
-            refreshStorageButton();
-            clearLists();
+            clear();
         }
     }else if (action === "close-menu") {
         closeMenu();
@@ -954,6 +950,17 @@ function menuChoice(e) {
     }else if (action === "play-start") {
         playStart();
     }
+}
+
+/**
+ * 清空几何容器
+ */
+function clear() {
+    clearCanvas();
+    storageManager.clear();
+    storageManager.append(geometryManager.toStorage());
+    refreshStorageButton();
+    clearLists();
 }
 
 
@@ -1068,6 +1075,7 @@ function filePanelClick(event) {
     if (action === 'file-load') {
         const inputDE = document.createElement('input');
         inputDE.setAttribute('type', 'file');
+        //inputDE.setAttribute('accept', '.gmt, .ggb, .geb');
         inputDE.setAttribute('accept', '.gmt');
         inputDE.addEventListener('change', fileLoad);
         inputDE.click();
@@ -1077,9 +1085,32 @@ function filePanelClick(event) {
         }, 100);
 
     }else if (action === 'file-down') {
-        alert('没做完呢');
+        // 文件类型
+        const fileType = dropdownValueDict.fileDown[0];
+        if (fileType === 'gmt') {
+            const text = gmtFileDown();
+            const textBlob = new Blob([text], {type: 'text/plain'});
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(textBlob);
+            link.download = `geb.${fileType}`;
+            link.click();
+            setTimeout(() => {
+                link.remove();
+            }, 500);
+        }
     }else if (action === 'file-part-down') {
-        alert('没做完呢');
+        // 文件类型
+        const fileType = dropdownValueDict.filePartDown[0];
+
+        // 导出图片
+        const dataURL = canvas.toDataURL(`image/${fileType}`);
+        const link = document.createElement("a");
+        link.href = dataURL;
+        link.download = `geb_canvas.${fileType}`;
+        link.click();
+        setTimeout(() => {
+            link.remove();
+        }, 500);
     }
 }
 
@@ -1093,17 +1124,17 @@ async function fileLoad(event) {
     if (!file) return;
     const fileName = file.name;
     const fileType = fileName.split('.').at(-1);
-    console.log(fileType);
 
     // 2. 创建FormData对象并添加文件
     const formData = new FormData();
     formData.append('userFile', file); // 'userFile'应与后端接口参数名匹配
+    formData.append('fileType', fileType);
 
     // 3. 使用fetch API发送请求
     try {
         const response = await fetch('/file_load', { // 请替换为实际的上传地址
             method: 'POST',
-            body: formData
+            body: formData,
             // 注意：使用fetch时，不要手动设置Content-Type头，浏览器会自动设置为multipart/form-data
         });
 
@@ -1115,9 +1146,8 @@ async function fileLoad(event) {
             throw new Error(flagData[1]);
         }
         const localData = flagData[1];
-        console.log(localData);
         const localEvent = new CustomEvent('file load success', {
-            detail: {data: localData}
+            detail: {data: localData, fileType: fileType}
         });
         document.dispatchEvent(localEvent);
 
@@ -1139,12 +1169,875 @@ document.addEventListener('file load error', fileLoadError);
  * @param {Event} event 
  */
 function fileLoadSuccess(event) {
+    // 解析文件内容
+    const localData = event.detail.data;
+    const fileType = event.detail.fileType;
+    clear();
+    resetTransform();
+    if (fileType === 'gmt') {
+        gmtFileParse(localData);
+    }else if (fileType === 'ggb') {
+        const figureData = localData['figure_data'];
+        const thumbnailData = localData['thumbnail'];
+        console.log(figureData);
+
+        const dictData = {'thumbnail': {'pictureData': thumbnailData}};
+        const loadChoice = ['thumbnail'];
+        dictDataLoad(dictData, loadChoice);
+        ggbFileParse(figureData);
+    }else if (fileType === 'geb') {
+        //
+    }
+
+    // DOM回显
     fileProcessInformation.textContent = '';
     fileProcessInformation.classList.add('active');
     fileProcessInformation.textContent = '加载成功';
     setTimeout(() => {
         fileProcessInformation.classList.remove("active");
     }, 3000);
+}
+
+/**
+ * base64转Blob
+ * @param {string} base64 
+ * @param {string} contentType 
+ * @returns 
+ */
+function base64ToBlob(base64, contentType = '') {
+   const byteCharacters = atob(base64);
+   const byteArrays = [];
+   for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+       const slice = byteCharacters.slice(offset, offset + 512);
+       const byteNumbers = new Array(slice.length);
+       for (let i = 0; i < slice.length; i++) {
+           byteNumbers[i] = slice.charCodeAt(i);
+       }
+       const byteArray = new Uint8Array(byteNumbers);
+       byteArrays.push(byteArray);
+   }
+   return new Blob(byteArrays, { type: contentType });
+}
+
+/**
+ * 解析gmt文件
+ * @param {Object} localData 
+ */
+function gmtFileParse(localData) {
+    const fileObjectData = JSON.parse(localData);
+    const fileObjectList = fileObjectData.statements;
+    // 逐项解析并添加
+    for (const item of fileObjectList) {
+        const objectType = item.type;
+        if (objectType === 'assignment') {
+            const name = item.name;
+            const value = item.value;
+            const figureType = value.type;
+            if (figureType === 'point') {
+                // 自由点
+                const x = value.x;
+                const y = value.y;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'point';
+                dict.x = x + window.innerWidth / 2;
+                dict.y = y + window.innerHeight / 2;
+                dict.base = {type: "none"};
+
+                createElement(dict);
+            }else if (figureType === 'line') {
+                // 直线
+                const pointIds = value.points;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+                dict.drawType = 'line';
+
+                createElement(dict);
+            }else if (figureType === 'circle') {
+                // 圆
+                const centerId = value.center;
+                const pointId = value.point;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'circle';
+                dict.base = {type: 'twoPoints', basesId: [centerId, pointId], value: 0};
+
+                createElement(dict);
+            }else if (figureType === 'intersect') {
+                // 交点
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'point';
+                dict.x = 0;
+                dict.y = 0;
+                dict.base = {type: 'intersection', 
+                    basesId: value.objects, 
+                    value: value.index,
+                    exclude: value.exclude};
+
+                createElement(dict);
+            }else if (figureType === 'line_point') {
+                // 线上点
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'point';
+                dict.x = 0;
+                dict.y = 0;
+                dict.base = {type: 'online', 
+                    basesId: [value.object], 
+                    value: value.ratio};
+
+                createElement(dict);
+            }else if (figureType === 'segment') {
+                // 线段
+                const pointIds = value.points;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+                dict.drawType = 'lineSegment';
+
+                createElement(dict);
+            }else if (figureType === 'ray') {
+                // 射线
+                const pointIds = value.points;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+                dict.drawType = 'ray';
+
+                createElement(dict);
+            }else if (figureType === 'circle3') {
+                // 三点圆
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'circle';
+                dict.base = {type: 'threePointCircle', basesId: value.points, value: 0};
+
+                createElement(dict);
+            }else if (figureType === 'compass') {
+                // 圆规
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'circle';
+                dict.base = {type: 'compass', basesId: value.points, value: 0};
+
+                createElement(dict);
+            }else if (figureType === 'angle_bisector') {
+                // 角平分线
+                const pointIds = value.points;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'threePointAngleBisector', basesId: pointIds, value: 0};
+                dict.drawType = 'line';
+
+                createElement(dict);
+            }else if (figureType === 'perpendicular') {
+                // 垂线
+                const pointId = value.point;
+                const lineId = value.object;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'perpendicular', basesId: [pointId, lineId], value: 0};
+                dict.drawType = 'line';
+
+                createElement(dict);
+            }else if (figureType === 'perpendicular_bisector') {
+                // 垂直平分线
+                const pointIds = value.points;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'perpendicularBisector', basesId: pointIds, value: 0};
+                dict.drawType = 'line';
+
+                createElement(dict);
+            }else if (figureType === 'parallel') {
+                // 平行线
+                const pointId = value.point;
+                const lineId = value.object;
+
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'line';
+                dict.base = {type: 'parallel', basesId: [pointId, lineId], value: 0};
+                dict.drawType = 'line';
+
+                createElement(dict);
+            }
+        }else if (objectType === 'initial') {
+            const objectIdList = item.objects;
+            geometryElementLists.initial = new Set(objectIdList);
+        }else if (objectType === 'movepoints') {
+            const objectIdList = item.points;
+            geometryElementLists.movepoints = new Set(objectIdList);
+        }else if (objectType === 'named') {
+            const objectIdList = item.objects;
+            const nameList = [];
+            for (const item of objectIdList) {
+                const nameFront = item['name_front'];
+                const nameBack = item['name_back'];
+                nameList.push(nameFront);
+                if (nameFront !== nameBack) {
+                    const element = geometryManager.get(nameFront);
+                    element.modifyName(nameBack);
+                }
+            }
+            geometryElementLists.name = new Set(nameList);
+        }else if (objectType === 'result') {
+            // 定位当前没有的result项
+            let findFlag = false;
+            let count = 1;
+            let resultName = 'result-1';
+            while (!findFlag) {
+                resultName = `result-${count}`;
+                if (Object.keys(geometryElementLists).includes(resultName)) {
+                    findFlag = true;
+                    break;
+                }
+                count++;
+            }
+            const displayName = `completedShow-${count}`;
+            setRefreshOverviewResultNumber(count);
+
+            geometryElementLists[resultName] = new Set(item.result);
+            if (item.display) geometryElementLists[displayName] = new Set(item.display);
+        }else if (objectType === 'explore') {
+            const objectIdList = item.objects;
+            geometryElementLists.explore = new Set(objectIdList);
+        }else if (objectType === 'rules') {
+            const objectIdList = item.expressions;
+            geometryElementLists.rules = objectIdList;
+        }
+    }
+
+    setTimeout(() => {
+        playStart();
+    }, 500);
+
+
+    /**
+     * 生成元素
+     * @param {{type: string, 
+     *          id: string, 
+     *          name: string, 
+     *          x?: number, 
+     *          y?: number, 
+     *          drawType?: string}} elementDict 
+     * @returns {Object}
+     */
+    function deserialization(elementDict) {
+        const type = elementDict.type;
+        const id = elementDict.id;
+        const name = elementDict.name;
+        
+        let element;
+        if (type === 'point') {
+            const x = elementDict.x;
+            const y = elementDict.y;
+            element = new Point(id, x, y);
+        }else if (type === 'line') {
+            element = new Line(id);
+            element.modifyDrawType(elementDict.drawType);
+        }else if (type === 'circle') {
+            element = new Circle(id);
+        }
+
+        element.modifyName(name);
+        return element;
+    }
+
+    /**
+     * 生成元素
+     * @param {{type: string, 
+     *          id: string, 
+     *          name: string, 
+     *          x?: number, 
+     *          y?: number, 
+     *          drawType?: string,
+     *          base: {type: string, 
+     *              basesId?: string[], 
+     *              value?: number, 
+     *              exclude?: string}
+     *          }} dict 
+     */
+    function createElement(dict) {
+        // 1.添加元素
+        const element = deserialization(dict);
+        geometryManager.addObject(element);
+
+        // 2.添加元素间连接
+        const bases = dict.base;
+        const basesType = bases.type;
+
+        if (basesType === 'none') return;
+        const id = dict.id;
+        const currentElement = geometryManager.get(id);
+        const currentElementType = dict.type;
+        const objectList = [];
+        bases.basesId.forEach((id) => {
+            objectList.push(geometryManager.get(id));
+        });
+        if (currentElementType === 'point') {
+            if (Object.keys(bases).includes('exclude')) {
+                currentElement.modifyBase(basesType, objectList, bases.value, bases.exclude);
+            }else{
+                currentElement.modifyBase(basesType, objectList, bases.value);
+            }
+            objectList.forEach((item) => {
+                item.addSuperstructure(currentElement);
+            });
+        }else if (currentElementType === 'line' || currentElementType === 'circle') {
+            currentElement.modifyDefine(basesType, objectList, bases.value);
+        }
+
+        drawContent();
+    }
+}
+
+/**
+ * 解析ggb文件
+ * @param {Object} localData 
+ */
+function ggbFileParse(localData) {
+    //return;
+    const fileObjectData = localData;
+    const fileObjectList = fileObjectData.geogebra.construction.element;
+    const operateList = fileObjectData.geogebra.construction.command;
+    const figureLabel = {};
+    const multipleLabel = {};
+    // 逐项解析并添加
+    for (const item of fileObjectList) {
+        const name = item['@label'];
+        const figureType = item['@type'];
+        if (figureType === 'point') {
+            // 判断点类型
+            let pointType = 'none';
+            for (const [index, item2] of operateList.entries()) {
+                const outputList = Object.values(item2['output']);
+                if (!outputList.includes(name)) continue;
+
+                const item2Type = item2['@name'];
+                if (item2Type === 'Point') {
+                    pointType = 'online';
+                    figureLabel[name] = index;
+                }else if (item2Type === 'Intersect') {
+                    pointType = 'intersection';
+                    figureLabel[name] = index;
+                    if (outputList.length > 1) {
+                        multipleLabel[name] = outputList.indexOf(name);
+                    }
+                }else if (item2Type === 'Midpoint') {
+                    pointType = 'middlePoint';
+                    figureLabel[name] = index;
+                }else if (item2Type === 'Center') {
+                    pointType = 'center';
+                    figureLabel[name] = index;
+                }
+            }
+
+            const dict = {};
+            dict.id = item['@label'];
+            if (Object.keys(item).includes('caption')) {
+                dict.name = item['caption']['@val'];
+            }else{
+                dict.name = item['@label'];
+            }
+            dict.type = 'point';
+            const color = [item['objColor']['@r'],
+                item['objColor']['@g'],
+                item['objColor']['@b'],];
+            dict.color = rgbToHex(color);
+            if (item['show']['@object'] === 'true') {
+                dict.visible = true;
+            }else{
+                dict.visible = false;
+            }
+            if (item['show']['@label'] === 'true') {
+                dict.showName = true;
+            }else{
+                dict.showName = false;
+            }
+
+            if (pointType === 'none') {
+                // 自由点
+                const x = item['coords']['@x'];
+                const y = item['coords']['@y'];
+                
+                dict.x = x + window.innerWidth / 2;
+                dict.y = y + window.innerHeight / 2;
+                dict.base = {type: "none"};
+
+                createElement(dict);
+            }else if (pointType === 'intersection') {
+                // 交点
+                dict.x = 0;
+                dict.y = 0;
+                const baseFigure = operateList[figureLabel[name]];
+                const id1 = baseFigure['@a0'];
+                const id2 = baseFigure['@a1'];
+                let index = 0;
+                if (Object.keys(baseFigure).includes('@a2')) {
+                    index = baseFigure['@a2'];
+                }else{
+                    index = multipleLabel[name];
+                }
+                const ids = [id1, id2];
+                const [excludeFlag, excludeSet] = ToolsFunction.excludePoint([element1, element2]);
+                const exclude = [...excludeSet][0].getId();
+                if (excludeFlag) {
+                    dict.base = {type: 'intersection', 
+                        basesId: ids, 
+                        value: index,
+                        exclude: exclude};
+                }else{
+                    dict.base = {type: 'intersection', 
+                        basesId: ids, 
+                        value: index};
+                }
+                
+                createElement(dict);
+            }else if (figureType === 'online') {
+                // 线上点
+                const x = item['coords']['@x'];
+                const y = item['coords']['@y'];
+                const baseFigure = operateList[figureLabel[name]];
+                const id = baseFigure['@a0'];
+                const figure = geometryManager.get(id);
+                const figureType = figure.getType();
+                let ratio = 0;
+                if (figureType === 'line') {
+                    ratio = ToolsFunction.nearPointOnLineElement(figure, [x, y]);
+                }else if (figureType === 'circle') {
+                    ratio = ToolsFunction.nearPointOnCircleElement(figure, [x, y]);
+                }
+                dict.base = {type: 'online', 
+                    basesId: [id], 
+                    value: ratio};
+
+                createElement(dict);
+            }else if (figureType === 'middlePoint') {
+                // 中点
+                const id1 = baseFigure['@a0'];
+                const id2 = baseFigure['@a1'];
+                const ids = [id1, id2];
+                const baseFigure = operateList[figureLabel[name]];
+                dict.base = {type: 'middlePoint', 
+                    basesId: ids};
+
+                createElement(dict);
+            }else if (figureType === 'center') {
+                // 圆心
+                const id = baseFigure['@a0'];
+                const baseFigure = operateList[figureLabel[name]];
+                dict.base = {type: 'center', 
+                    basesId: [id]};
+
+                createElement(dict);
+            }
+        }else if (figureType === 'line') {
+            // 直线
+            // 判断类型
+            let lineType = 'none';
+            for (const [index, item2] of operateList.entries()) {
+                const outputList = Object.values(item2['output']);
+                if (!outputList.includes(name)) continue;
+
+                const item2Type = item2['@name'];
+                if (item2Type === 'Line') {
+                    const figures = Object.values(item2['@input']);
+                    const element1Id = figures[0];
+                    const element2Id = figures[1];
+                    const element1 = geometryManager.get(element1Id);
+                    const element2 = geometryManager.get(element2Id);
+                    const element1Type = element1.getType();
+                    const element2Type = element2.getType();
+                    if (element1Type === 'line' || element2Type === 'line') {
+                        lineType = 'parallel';
+                    }else{
+                        lineType = 'twoPoints';
+                    }
+                    figureLabel[name] = index;
+                }else if (item2Type === 'OrthogonalLine') {
+                    lineType = 'perpendicular';
+                    figureLabel[name] = index;
+                }else if (item2Type === 'LineBisector') {
+                    lineType = 'perpendicularBisector';
+                    figureLabel[name] = index;
+                }else if (item2Type === 'AngularBisector') {
+                    if (item2['input'].length === 3) {
+                        lineType = 'threePointAngleBisector';
+                    }else if (item2['input'].length === 2) {
+                        lineType = 'twoLineAngleBisector';
+                        if (outputList.length > 1) {
+                            multipleLabel[name] = outputList.indexOf(name);
+                        }
+                    }
+                    figureLabel[name] = index;
+                }
+            }
+
+            const dict = {};
+            dict.id = item['@label'];
+            if (Object.keys(item).includes('caption')) {
+                dict.name = item['caption']['@val'];
+            }else{
+                dict.name = item['@label'];
+            }
+            dict.type = 'line';
+            dict.drawType = 'line';
+            const color = [item['objColor']['@r'],
+                item['objColor']['@g'],
+                item['objColor']['@b'],];
+            dict.color = rgbToHex(color);
+            if (item['show']['@object'] === 'true') {
+                dict.visible = true;
+            }else{
+                dict.visible = false;
+            }
+            if (item['show']['@label'] === 'true') {
+                dict.showName = true;
+            }else{
+                dict.showName = false;
+            }
+
+            if (lineType === 'twoPoints') {
+                const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+                createElement(dict);
+            }else if (lineType === 'parallel') {
+                const figureList = Object.values(operateList[figureLabel[name]]['@input']);
+                const element1Id = figureList[0];
+                const element1 = geometryManager.get(element1Id);
+                const element1Type = element1.getType();
+                if (element1Type === 'line') {
+                    dict.base = {type: 'parallel', basesId: [element1Id, figureList[1]], value: 0};
+                }else{
+                    dict.base = {type: 'parallel', basesId: [figureList[1], element1Id], value: 0};
+                }
+                createElement(dict);
+            }else if (lineType === 'perpendicular') {
+                const figureList = Object.values(operateList[figureLabel[name]]['@input']);
+                const element1Id = figureList[0];
+                const element1 = geometryManager.get(element1Id);
+                const element1Type = element1.getType();
+                if (element1Type === 'line') {
+                    dict.base = {type: 'perpendicular', basesId: [element1Id, figureList[1]], value: 0};
+                }else{
+                    dict.base = {type: 'perpendicular', basesId: [figureList[1], element1Id], value: 0};
+                }
+                createElement(dict);
+            }else if (lineType === 'perpendicularBisector') {
+                const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'perpendicularBisector', basesId: pointIds, value: 0};
+                createElement(dict);
+            }else if (lineType === 'threePointAngleBisector') {
+                const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'threePointAngleBisector', basesId: pointIds, value: 0};
+                createElement(dict);
+            }else if (lineType === 'twoLineAngleBisector') {
+                const lineIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'twoLineAngleBisector', basesId: lineIds, value: multipleLabel[name]};
+                createElement(dict);
+            }
+        }else if (figureType === 'circle') {
+            // 圆
+            // 判断类型
+            let circleType = 'none';
+            for (const [index, item2] of operateList.entries()) {
+                const outputList = Object.values(item2['output']);
+                if (!outputList.includes(name)) continue;
+
+                const item2Type = item2['@name'];
+                if (item2Type !== 'Circle') continue;
+
+                if (Object.values(item2['input']).length > 2) {
+                    // 三点圆
+                    circleType = 'threePointCircle';
+                    figureLabel[name] = index;
+                }else if (Object.values(item2['input']).length === 2) {
+                    const param2 = item2['input']['@a1'];
+                    if (param2.includes('Segment')) {
+                        // 三点圆规
+                        circleType = 'compass';
+                        figureLabel[name] = index;
+                    }else if (param2.includes('Radius')) {
+                        // 复制圆规
+                        circleType = 'copyCompass';
+                        figureLabel[name] = index;
+                    }else{
+                        // 圆
+                        circleType = 'twoPoints';
+                        figureLabel[name] = index;
+                    }
+                }
+            }
+
+            const dict = {};
+            dict.id = item['@label'];
+            if (Object.keys(item).includes('caption')) {
+                dict.name = item['caption']['@val'];
+            }else{
+                dict.name = item['@label'];
+            }
+            dict.type = 'circle';
+            const color = [item['objColor']['@r'],
+                item['objColor']['@g'],
+                item['objColor']['@b'],];
+            dict.color = rgbToHex(color);
+            if (item['show']['@object'] === 'true') {
+                dict.visible = true;
+            }else{
+                dict.visible = false;
+            }
+            if (item['show']['@label'] === 'true') {
+                dict.showName = true;
+            }else{
+                dict.showName = false;
+            }
+
+            if (circleType === 'twoPoints') {
+                const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+                createElement(dict);
+            }else if (circleType === 'compass') {
+                const paramList = Object.values(operateList[figureLabel[name]]['@input']);
+                const centerId = paramList[0];
+                const pointIdList = ToolsFunction.stringArraySplit(paramList[1]);
+                const pointId1 = pointIdList[0];
+                const pointId2 = pointIdList[1];
+                dict.base = {type: 'compass', basesId: [centerId, pointId1, pointId2], value: 0};
+                createElement(dict);
+            }else if (circleType === 'copyCompass') {
+                const paramList = Object.values(operateList[figureLabel[name]]['@input']);
+                const centerId = paramList[0];
+                const pointIdList = ToolsFunction.stringArraySplit(paramList[1]);
+                const circleId = pointIdList[0];
+                dict.base = {type: 'copyCompass', basesId: [centerId, circleId], value: 0};
+                createElement(dict);
+            }else if (circleType === 'threePointCircle') {
+                const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+                dict.base = {type: 'threePointCircle', basesId: pointIds, value: 0};
+                createElement(dict);
+            }
+        }else if (figureType === 'segment') {
+            // 线段
+            for (const [index, item2] of operateList.entries()) {
+                const outputList = Object.values(item2['output']);
+                if (!outputList.includes(name)) continue;
+
+                const item2Type = item2['@name'];
+                if (item2Type === 'Segment') {
+                    figureLabel[name] = index;
+                }
+            }
+            const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+
+            const dict = {};
+            dict.id = name;
+            dict.name = name;
+            dict.type = 'line';
+            dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+            dict.drawType = 'lineSegment';
+
+            createElement(dict);
+        }else if (figureType === 'ray') {
+            // 射线
+            for (const [index, item2] of operateList.entries()) {
+                const outputList = Object.values(item2['output']);
+                if (!outputList.includes(name)) continue;
+
+                const item2Type = item2['@name'];
+                if (item2Type === 'Ray') {
+                    figureLabel[name] = index;
+                }
+            }
+            const pointIds = Object.values(operateList[figureLabel[name]]['@input']);
+
+            const dict = {};
+            dict.id = name;
+            dict.name = name;
+            dict.type = 'line';
+            dict.base = {type: 'twoPoints', basesId: pointIds, value: 0};
+            dict.drawType = 'ray';
+
+            createElement(dict);
+        }
+        if (objectType === 'initial') {
+            const objectIdList = item.objects;
+            geometryElementLists.initial = new Set(objectIdList);
+        }else if (objectType === 'movepoints') {
+            const objectIdList = item.points;
+            geometryElementLists.movepoints = new Set(objectIdList);
+        }else if (objectType === 'named') {
+            const objectIdList = item.objects;
+            const nameList = [];
+            for (const item of objectIdList) {
+                const nameFront = item['name_front'];
+                const nameBack = item['name_back'];
+                nameList.push(nameFront);
+                if (nameFront !== nameBack) {
+                    const element = geometryManager.get(nameFront);
+                    element.modifyName(nameBack);
+                }
+            }
+            geometryElementLists.name = new Set(nameList);
+        }else if (objectType === 'result') {
+            // 定位当前没有的result项
+            let findFlag = false;
+            let count = 1;
+            let resultName = 'result-1';
+            while (!findFlag) {
+                resultName = `result-${count}`;
+                if (Object.keys(geometryElementLists).includes(resultName)) {
+                    findFlag = true;
+                    break;
+                }
+                count++;
+            }
+            const displayName = `completedShow-${count}`;
+            setRefreshOverviewResultNumber(count);
+
+            geometryElementLists[resultName] = new Set(item.result);
+            if (item.display) geometryElementLists[displayName] = new Set(item.display);
+        }else if (objectType === 'explore') {
+            const objectIdList = item.objects;
+            geometryElementLists.explore = new Set(objectIdList);
+        }else if (objectType === 'rules') {
+            const objectIdList = item.expressions;
+            geometryElementLists.rules = objectIdList;
+        }
+    }
+
+    setTimeout(() => {
+        playStart();
+    }, 500);
+
+
+    /**
+     * 生成元素
+     * @param {{type: string, 
+     *          id: string, 
+     *          name: string, 
+     *          x?: number, 
+     *          y?: number, 
+     *          drawType?: string,
+     *          color: string,
+     *          visible: boolean,
+     *          showName: boolean}} elementDict 
+     * @returns {Object}
+     */
+    function deserialization(elementDict) {
+        const type = elementDict.type;
+        const id = elementDict.id;
+        const name = elementDict.name;
+        
+        let element;
+        if (type === 'point') {
+            const x = elementDict.x;
+            const y = elementDict.y;
+            element = new Point(id, x, y);
+        }else if (type === 'line') {
+            element = new Line(id);
+            element.modifyDrawType(elementDict.drawType);
+        }else if (type === 'circle') {
+            element = new Circle(id);
+        }
+
+        element.modifyName(name);
+        return element;
+    }
+
+    /**
+     * 生成元素
+     * @param {{type: string, 
+     *          id: string, 
+     *          name: string, 
+     *          x?: number, 
+     *          y?: number, 
+     *          drawType?: string,
+     *          base: {type: string, 
+     *              basesId?: string[], 
+     *              value?: number, 
+     *              exclude?: string},
+     *          color: string,
+     *          visible: boolean,
+     *          showName: boolean,
+     *          }} dict 
+     */
+    function createElement(dict) {
+        // 1.添加元素
+        const element = deserialization(dict);
+        geometryManager.addObject(element);
+
+        // 2.添加元素间连接
+        const bases = dict.base;
+        const basesType = bases.type;
+
+        if (basesType === 'none') return;
+        const id = dict.id;
+        const currentElement = geometryManager.get(id);
+        const currentElementType = dict.type;
+        const objectList = [];
+        bases.basesId.forEach((id) => {
+            objectList.push(geometryManager.get(id));
+        });
+        if (currentElementType === 'point') {
+            if (Object.keys(bases).includes('exclude')) {
+                currentElement.modifyBase(basesType, objectList, bases.value, bases.exclude);
+            }else{
+                currentElement.modifyBase(basesType, objectList, bases.value);
+            }
+            objectList.forEach((item) => {
+                item.addSuperstructure(currentElement);
+            });
+        }else if (currentElementType === 'line' || currentElementType === 'circle') {
+            currentElement.modifyDefine(basesType, objectList, bases.value);
+        }
+
+        drawContent();
+    }
+
+    /**
+     * rgb转16进制
+     * @param {string[]} rgb 
+     * @returns {string}
+     */
+    function rgbToHex(rgb) {
+        var hex = "#";
+        rgb.forEach(function(value) {
+            var hexPart = parseInt(value).toString(16);
+            hex += hexPart.length === 1 ? "0" + hexPart : hexPart;
+        });
+        console.log(hex)
+        return hex;
+    }
 }
 
 /**
@@ -1199,6 +2092,153 @@ function closeFileImformationModal(event) {
     modal.style.display = 'none';
     modal.classList.remove('active');
     masks.style.display = 'none';
+}
+
+/**
+ * gmt文件导出
+ * @returns {string}
+ */
+function gmtFileDown() {
+    let text = '';
+    const rename = {};
+    // 几何对象
+    const figureList = geometryManager.getAllByOrder();
+    figureList.forEach((element) => {
+        const id = element.getId();
+        const name = element.getName();
+        if (id !== name) rename[id] = name;
+        const type = element.getType();
+        const base = element.getBase();
+        const baseType = base.type;
+
+        if (type === 'point') {
+            if (baseType === 'none') {
+                const [x, y] = element.getCoordinate();
+                const elementText = `${id}=[${x - window.innerWidth / 2},${y - window.innerHeight / 2}]\n`;
+                text += elementText;
+            }else if (baseType === 'intersection') {
+                const [baseFigure1, baseFigure2] = base.bases;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const value = base.value;
+                if (Object.keys(base).includes('exclude')) {
+                    const exclude = base.exclude;
+                    const elementText = `${id}=Intersect[${baseFigure1id},${baseFigure2id},${value},${exclude}]\n`;
+                    text += elementText;
+                }else{
+                    const elementText = `${id}=Intersect[${baseFigure1id},${baseFigure2id},${value}]\n`;
+                    text += elementText;
+                }
+            }else if (baseType === 'online') {
+                const [baseFigure] = base.bases;
+                const baseFigureId = baseFigure.getId();
+                const value = base.value;
+                const elementText = `${id}=Linepoint[${baseFigureId},${value}]\n`;
+                text += elementText;
+            }else if (baseType === 'middlePoint') {
+                const [baseFigure1, baseFigure2] = base.bases;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const elementText = `${id}=Midpoint[${baseFigure1id},${baseFigure2id}]\n`;
+                text += elementText;
+            }else if (baseType === 'center') {
+                const [baseFigure] = base.bases;
+                const baseFigureId = baseFigure.getId();
+                const elementText = `${id}=CenterPoint[${baseFigureId}]\n`;
+                text += elementText;
+            }
+        }else if (type === 'line') {
+            if (baseType === 'twoPoints') {
+                const lineType = element.getDrawType();
+                const [baseFigure1, baseFigure2] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                if (lineType === 'line') {
+                    const elementText = `${id}=Line[${baseFigure1id},${baseFigure2id}]\n`;
+                    text += elementText;
+                }else if (lineType === 'lineSegment') {
+                    const elementText = `${id}=Segment[${baseFigure1id},${baseFigure2id}]\n`;
+                    text += elementText;
+                }else if (lineType === 'ray') {
+                    const elementText = `${id}=Ray[${baseFigure1id},${baseFigure2id}]\n`;
+                    text += elementText;
+                }
+            }else if (baseType === 'parallel') {
+                const [baseFigure1, baseFigure2] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const elementText = `${id}=Parallel[${baseFigure1id},${baseFigure2id}]\n`;
+                text += elementText;
+            }else if (baseType === 'perpendicular') {
+                const [baseFigure1, baseFigure2] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const elementText = `${id}=Perp[${baseFigure1id},${baseFigure2id}]\n`;
+                text += elementText;
+            }else if (baseType === 'perpendicularBisector') {
+                const [baseFigure1, baseFigure2] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const elementText = `${id}=PBisect[${baseFigure1id},${baseFigure2id}]\n`;
+                text += elementText;
+            }else if (baseType === 'threePointAngleBisector') {
+                const [baseFigure1, baseFigure2, baseFigure3] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId(), baseFigure3id = baseFigure3.getId();
+                const elementText = `${id}=ABisect[${baseFigure1id},${baseFigure2id},${baseFigure3id}]\n`;
+                text += elementText;
+            }
+        }else if (type === 'circle') {
+            if (baseType === 'twoPoints') {
+                const [baseFigure1, baseFigure2] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId();
+                const elementText = `${id}=Circle[${baseFigure1id},${baseFigure2id}]\n`;
+                text += elementText;
+            }else if (baseType === 'compass') {
+                const [baseFigure1, baseFigure2, baseFigure3] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId(), baseFigure3id = baseFigure3.getId();
+                const elementText = `${id}=Compass[${baseFigure1id},${baseFigure2id},${baseFigure3id}]\n`;
+                text += elementText;
+            }else if (baseType === 'threePointCircle') {
+                const [baseFigure1, baseFigure2, baseFigure3] = base.figure;
+                const baseFigure1id = baseFigure1.getId(), baseFigure2id = baseFigure2.getId(), baseFigure3id = baseFigure3.getId();
+                const elementText = `${id}=Circle3[${baseFigure1id},${baseFigure2id},${baseFigure3id}]\n`;
+                text += elementText;
+            }
+        }
+    });
+
+    // 选择表
+    text += '\n';
+    for (const [key, setValue] of Object.entries(geometryElementLists)) {
+        if (setValue.size === 0) continue;
+        const frontName = key.split('-')[0];
+        if (key === 'initial') {
+            const listText = `initial=${[...setValue]}\n`;
+            text += listText;
+        }else if (key === 'movepoints') {
+            const listText = `movepoints=${[...setValue]}\n`;
+            text += listText;
+        }else if (key === 'name') {
+            let nameText = '';
+            setValue.forEach((id) => {
+                if (Object.keys(rename).includes(id)) {
+                    nameText += `${id}.${rename[id]},`;
+                }else{
+                    nameText += `${id},`;
+                }
+            });
+            const listText = `named=${nameText.slice(0, -1)}\n`;
+            text += listText;
+        }else if (frontName === 'result') {
+            const value = key.split('-')[1];
+            const display = geometryElementLists[`completedShow-${value}`];
+            if (display.size !== 0 && setValue !== display) {
+                const listText = `result=${[...setValue]}:${[...display]}\n`;
+                text += listText;
+            }else{
+                const listText = `result=${[...setValue]}\n`;
+                text += listText;
+            }
+        }else if (key === 'explore') {
+            const listText = `explore=${[...setValue]}\n`;
+            text += listText;
+        }
+    }
+    return text;
 }
 
 
@@ -1367,37 +2407,60 @@ function storage() {
 function overviewTitleClick(event) {
     const action = event.target?.dataset?.action;
     if (action === 'result-number-add') {
-        resultNumber++;
-        const resultNumberDE = document.getElementById('overview-result-number');
-        resultNumberDE.textContent = resultNumber;
-
-        const newResult = `result-${resultNumber}`;
-        geometryElementLists[newResult] = new Set();
-        const newShow = `completedShow-${resultNumber}`;
-        geometryElementLists[newShow] = new Set();
-        dropdownRefresh();
+        setRefreshOverviewResultNumber(resultNumber++);
     }else if (action === 'result-number-sub') {
         if (resultNumber <= 1) return;
-        const newResult = `result-${resultNumber}`;
-        delete geometryElementLists[newResult];
-        const newShow = `completedShow-${resultNumber}`;
-        delete geometryElementLists[newShow];
-        dropdownRefresh();
+        setRefreshOverviewResultNumber(resultNumber--);
+    }
+}
 
-        resultNumber--;
-        const resultNumberDE = document.getElementById('overview-result-number');
-        resultNumberDE.textContent = resultNumber;
+/**
+ * 设定选择列表解的数量并刷新一览面板
+ * @param {number} cacheNumber 
+ */
+function setRefreshOverviewResultNumber(cacheNumber) {
+    setResultNumber(cacheNumber);
+    resultNumber = cacheNumber;
+    
+    dropdownRefresh();
+    const resultNumberDE = document.getElementById('overview-result-number');
+    resultNumberDE.textContent = cacheNumber;
+}
+
+/**
+ * 设定选择列表解的数量
+ * @param {number} cacheNumber 
+ */
+function setResultNumber(cacheNumber) {
+    if (cacheNumber > resultNumber) {
+        for (let i = resultNumber + 1; i <= cacheNumber; i++) {
+            const newResult = `result-${i}`;
+            geometryElementLists[newResult] = new Set();
+            const newShow = `completedShow-${i}`;
+            geometryElementLists[newShow] = new Set();
+        }
+    }else if (cacheNumber < resultNumber) {
+        for (let i = resultNumber; i > cacheNumber; i--) {
+            const newResult = `result-${i}`;
+            delete geometryElementLists[newResult];
+            const newShow = `completedShow-${i}`;
+            delete geometryElementLists[newShow];
+        }
     }
 }
 
 const fileDownDict = {
     gmt: 'Geometry',
-    ggb: 'Geogebra',
-    geb: 'Geogebra-Euclidea-Blueprint',
+    //ggb: 'Geogebra',
+    //geb: 'Geogebra-Euclidea-Blueprint',
 }
 const filePartDownDict = {
     jpg: 'Joint Photographic Experts Group',
     png: 'Portable Network Graphics',
+}
+const filePartDownTypeDict = {
+    screenshot: '截图',
+    //thumbnail: '截图加信息',
 }
 
 const dropdownTriggerChoice = document.getElementById('dropdownTriggerChoice');
@@ -1406,15 +2469,19 @@ const dropdownTriggerFileDown = document.getElementById('dropdownTriggerFileDown
 const dropdownMenuFileDown = document.getElementById('dropdownMenuFileDown');
 const dropdownTriggerFilePartDown = document.getElementById('dropdownTriggerFilePartDown');
 const dropdownMenuFilePartDown = document.getElementById('dropdownMenuFilePartDown');
+const dropdownTriggerFilePartDownType = document.getElementById('dropdownTriggerFilePartDownType');
+const dropdownMenuFilePartDownType = document.getElementById('dropdownMenuFilePartDownType');
 const dropdownDEDict = {
     choice: [dropdownTriggerChoice, dropdownMenuChoice],
     fileDown: [dropdownTriggerFileDown, dropdownMenuFileDown],
     filePartDown: [dropdownTriggerFilePartDown, dropdownMenuFilePartDown],
+    filePartDownType: [dropdownTriggerFilePartDownType, dropdownMenuFilePartDownType],
 }
 let dropdownValueDict = {
     choice: [Object.keys(geometryElementLists)[0], geometryElementLists],
     fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
     filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+    filePartDownType: [Object.keys(filePartDownTypeDict)[0], filePartDownTypeDict],
 }
 
 /**
@@ -1425,6 +2492,7 @@ function refreshDropdownValueDict() {
         choice: [Object.keys(geometryElementLists)[0], geometryElementLists],
         fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
         filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
+        filePartDownType: [Object.keys(filePartDownTypeDict)[0], filePartDownTypeDict],
     }
 }
 
@@ -1493,6 +2561,9 @@ function updateSelect(index, item) {
     }else if (index === 'filePartDown') {
         const spanDE = document.getElementById('file-part-down-text-type');
         spanDE.textContent = `.${item}`;
+    }else if (index === 'filePartDownType') {
+        const spanDE = document.getElementById('file-part-down-type-text-type');
+        spanDE.textContent = filePartDownTypeDict[item];
     }
 }
 
@@ -1634,6 +2705,7 @@ function dataLoad() {
             geometryElementLists[key] = new Set(value);
         }
     }
+    geometryManager.geometryElementLists = geometryElementLists;
     
     // 几何对象
     const elementsJSON = sessionStorage.getItem('elements');
@@ -1681,6 +2753,136 @@ function dataLoad() {
     if (constructRecordJSON) storageManager.deserialization(constructRecordJSON);
     refreshStorageButton();
     
+    
+    function deserialization(elementDict) {
+        const type = elementDict.type;
+        const id = elementDict.id;
+        const name = elementDict.name;
+        const visible = elementDict.visible;
+        const valid = elementDict.valid;
+        const color = elementDict.color;
+        const showName = elementDict.showName;
+        
+        let element;
+        if (type === 'point') {
+            const x = elementDict.x;
+            const y = elementDict.y;
+            element = new Point(id, x, y);
+        }else if (type === 'line') {
+            element = new Line(id);
+            element.modifyDrawType(elementDict.drawType);
+        }else if (type === 'circle') {
+            element = new Circle(id);
+        }
+
+        element.modifyName(name);
+        element.modifyVisible(visible);
+        element.modifyValid(valid);
+        element.modifyShowName(showName);
+        element.modifyColor(color);
+        return element;
+    }
+}
+
+/**
+ * 选择性文件数据加载
+ * @param {{figure: Object[], choice: Object}} dictData 
+ * @param {string[]} loadChoice 
+ * loadChoice = ['geometryElementLists', 
+ *      'geometryElements', 
+ *      'constructRecord',
+ *      'thumbnail']
+ */
+function dictDataLoad(dictData, loadChoice) {
+    if (loadChoice.includes('thumbnail')) {
+        const thumbnail = dictData.thumbnail;
+        if (thumbnail.title_input) document.getElementById("title_inf").textContent = thumbnail.title_input;
+        if (thumbnail.body_input) document.getElementById("body_inf").textContent = thumbnail.body_input;
+        if (thumbnail.bottom_input) document.getElementById("bottom_inf").textContent = thumbnail.bottom_input;
+        if (thumbnail.title_input) document.getElementById("title_input").value = thumbnail.title_input;
+        if (thumbnail.body_input) document.getElementById("body_input").value = thumbnail.body_input;
+        if (thumbnail.bottom_input) document.getElementById("bottom_input").value = thumbnail.bottom_input;
+
+        if (thumbnail.pictureData) {
+            const picture = document.getElementById('thumbnail-picture');
+            if (picture) {
+                if (thumbnail.pictureData) {
+                    picture.src = `data:image/png;base64,${thumbnail.pictureData}`;
+                }else{
+                    picture.remove();
+                }
+            }else if (thumbnail.pictureData) {
+                const pictureDE = document.createElement('img');
+                pictureDE.id = 'thumbnail-picture';
+                pictureDE.src = `data:image/png;base64,${thumbnail.pictureData}`;
+                pictureDE.alt = "此处放置缩略图";
+                const container = document.getElementById('thumbnail-picture-frame');
+                container.appendChild(pictureDE);
+            }
+        }
+    }
+
+    if (loadChoice.includes('geometryElementLists')) {
+        // 选定栏
+        clearLists();
+        const geometryElementListsLoad = dictData.choice;
+        if (geometryElementListsLoad) {
+            for (const [key, value] of Object.entries(geometryElementListsLoad)) {
+                geometryElementLists[key] = new Set(value);
+            }
+        }
+        geometryManager.geometryElementLists = geometryElementLists;
+    }
+    
+    if (loadChoice.includes('geometryElements')) {
+        // 几何对象
+        const elements = dictData.figure;
+        if (!elements) return;
+
+        // 1.反序列化为元素
+        elements.forEach((item) => {
+            const element = deserialization(item);
+            geometryManager.addObject(element);
+        });
+
+        // 2.添加元素间连接
+        for (const item of elements) {
+            const bases = item.base;
+            const basesType = bases.type;
+
+            if (basesType === 'none') continue;
+            const id = item.id;
+            const currentElement = geometryManager.get(id);
+            const currentElementType = item.type;
+            const objectList = [];
+            bases.basesId.forEach((id) => {
+                objectList.push(geometryManager.get(id));
+            });
+            if (currentElementType === 'point') {
+                if (Object.keys(bases).includes('exclude')) {
+                    currentElement.modifyBase(basesType, objectList, bases.value, bases.exclude);
+                }else{
+                    currentElement.modifyBase(basesType, objectList, bases.value);
+                }
+                objectList.forEach((item) => {
+                    item.addSuperstructure(currentElement);
+                });
+            }else if (currentElementType === 'line' || currentElementType === 'circle') {
+                currentElement.modifyDefine(basesType, objectList, bases.value);
+            }
+
+            drawContent();
+        }
+    }
+
+    if (loadChoice.includes('constructRecord')) {
+        // 构造记录
+        const constructRecordJSON = dictData.constructRecord;
+        if (constructRecordJSON) storageManager.deserialization(constructRecordJSON);
+        refreshStorageButton();
+    }
+
+
     function deserialization(elementDict) {
         const type = elementDict.type;
         const id = elementDict.id;

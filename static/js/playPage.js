@@ -182,6 +182,7 @@ function getStart() {
 let panelState;
 let loadFlag = false;
 let completeOnce = false;
+let solve = false;
 let goldGoal = [];
 
 
@@ -1205,6 +1206,10 @@ const geometryElementListsChoice = {
     all: 'all',
     hidden: 'all',
 }
+const fileDownDict = {
+    //ggb: 'Geogebra',
+    geb: 'Geogebra-Euclidea-Blueprint',
+}
 const filePartDownDict = {
     jpg: 'Joint Photographic Experts Group',
     png: 'Portable Network Graphics',
@@ -1212,14 +1217,18 @@ const filePartDownDict = {
 
 const dropdownTriggerChoice = document.getElementById('dropdownTriggerChoice');
 const dropdownMenuChoice = document.getElementById('dropdownMenuChoice');
+const dropdownTriggerFileDown = document.getElementById('dropdownTriggerFileDown');
+const dropdownMenuFileDown = document.getElementById('dropdownMenuFileDown');
 const dropdownTriggerFilePartDown = document.getElementById('dropdownTriggerFilePartDown');
 const dropdownMenuFilePartDown = document.getElementById('dropdownMenuFilePartDown');
 const dropdownDEDict = {
     choice: [dropdownTriggerChoice, dropdownMenuChoice],
+    //fileDown: [dropdownTriggerFileDown, dropdownMenuFileDown],
     filePartDown: [dropdownTriggerFilePartDown, dropdownMenuFilePartDown],
 }
 const dropdownValueDict = {
     choice: [Object.keys(geometryElementListsChoice)[0], geometryElementListsChoice],
+    //fileDown: [Object.keys(fileDownDict)[0], fileDownDict],
     filePartDown: [Object.keys(filePartDownDict)[0], filePartDownDict],
 }
 
@@ -1390,8 +1399,45 @@ function dropdownRefresh() {
  */
 function filePanelClick(event) {
     const action = event.target.getAttribute("data-action");
-    if (action === 'file-part-down') {
+    if (action === 'file-down') {
         alert('没做完呢');
+    }else if (action === 'file-part-down') {
+        // 文件类型
+        const fileType = dropdownValueDict.filePartDown[0];
+
+        // 绘制内容
+        const dataURL = canvas.toDataURL("image/png");
+        const canvas2 = document.createElement("canvas");
+        canvas2.width = window.innerWidth;
+        canvas2.height = window.innerHeight;
+        const ct2 = canvas2.getContext('2d');
+        const img = new Image();
+        img.src = dataURL;
+        img.onload = function() {
+            ct2.drawImage(img, 0, 0);
+        
+            // 绘制步数
+            const text = movesCounterDE.textContent;
+            ct2.save();
+            ct2.font = "20px serif";
+            if (solve) ct2.fillStyle = 'gold';
+            // 测量文本宽度并计算居中位置
+            const textWidth = ct2.measureText(text).width;
+            const x = (canvasWidth - textWidth) / 2;
+            ct2.fillText(text, x, 25);
+            ct2.restore();
+
+            // 导出图片
+            const dataURL2 = canvas2.toDataURL(`image/${fileType}`);
+            const link = document.createElement("a");
+            link.href = dataURL2;
+            link.download = `egb_canvas.${fileType}`;
+            link.click();
+            setTimeout(() => {
+                canvas2.remove();
+                link.remove();
+            }, 500);
+        }
     }
 }
 
@@ -1579,6 +1625,14 @@ function resultVerifyFunction() {
                         // 自身判定
                         const id2 = element.getId();
                         if (!geometryElementLists.initial.has(id2)) {
+                            let findFlag = false;
+                            for (const listName of Object.keys(geometryElementLists)) {
+                                const frontName = listName.split('-')[0];
+                                if (frontName !== 'completedShow') continue;
+                                if (geometryElementLists[listName].has(id2)) findFlag = true;
+                            }
+                            if (findFlag) continue;
+                            if (geometryElementLists.explore.has(id2)) continue;
                             if (id === id2) continue;
                         }
                         // 位置判定
@@ -1596,6 +1650,14 @@ function resultVerifyFunction() {
                         // 自身判定
                         const id2 = element.getId();
                         if (!geometryElementLists.initial.has(id2)) {
+                            let findFlag = false;
+                            for (const listName of Object.keys(geometryElementLists)) {
+                                const frontName = listName.split('-')[0];
+                                if (frontName !== 'completedShow') continue;
+                                if (geometryElementLists[listName].has(id2)) findFlag = true;
+                            }
+                            if (findFlag) continue;
+                            if (geometryElementLists.explore.has(id2)) continue;
                             if (id === id2) continue;
                         }
                         // 位置判定
@@ -1613,6 +1675,14 @@ function resultVerifyFunction() {
                         // 自身判定
                         const id2 = element.getId();
                         if (!geometryElementLists.initial.has(id2)) {
+                            let findFlag = false;
+                            for (const listName of Object.keys(geometryElementLists)) {
+                                const frontName = listName.split('-')[0];
+                                if (frontName !== 'completedShow') continue;
+                                if (geometryElementLists[listName].has(id2)) findFlag = true;
+                            }
+                            if (findFlag) continue;
+                            if (geometryElementLists.explore.has(id2)) continue;
                             if (id === id2) continue;
                         }
                         // 位置判定
@@ -1624,7 +1694,8 @@ function resultVerifyFunction() {
                 }
             });
             if (result.size === length && result.size !== 0) {
-                goldGoal.push(listName);
+                const number = listName.split('-')[1];
+                goldGoal.push(`completedShow-${number}`);
             }
         }
 
@@ -1683,6 +1754,7 @@ function success() {
 
     // 改变标志
     completeOnce = true;
+    solve = true;
 }
 
 window.addEventListener("unsuccess", unsuccess);
@@ -1699,6 +1771,9 @@ function unsuccess() {
     canvasGoldGoal(goldGoal);
     canvasDisplay(goldGoal);
     drawContent();
+
+    // 改变标志
+    solve = false;
 }
 
 // 加载完毕

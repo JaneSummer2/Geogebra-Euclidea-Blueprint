@@ -1,10 +1,13 @@
 """app.py"""
-from flask import Flask, render_template, send_from_directory, request, jsonify
+import base64
+
+from flask import Flask, render_template, send_from_directory, request, jsonify, Response
 import json
 from random import sample
 from typing import Tuple, List, Dict
 # 在 app.py 中
-from static.py.gmt_parse import parse_geometry_file
+from static.py.gmt_parse import parse_geometry_file as parse_gmt_file
+from static.py.ggb_parse import bytes_parse, zip_parse, xml_parse
 
 
 # 1. 创建 Flask 实例（可选：自定义静态/模板文件夹路径）
@@ -29,15 +32,26 @@ def file_load():
     try:
         data = 'text'
         uploaded_file = request.files.get('userFile', '')
+        fileType = request.values.get('fileType', '')
     
         if uploaded_file:
-            data = uploaded_file.read().decode('utf-8')
-            data = parse_geometry_file(data)
+            if fileType == 'gmt':
+                read_file = uploaded_file.read().decode('utf-8')
+                data = parse_gmt_file(read_file)
+            elif fileType == 'ggb':
+                read_file = uploaded_file.read()
+                zip_file = bytes_parse(read_file)
+                ggb_main_bytes = zip_parse(zip_file, 'geogebra.xml')
+                thumbnail_bytes = zip_parse(zip_file, 'geogebra_thumbnail.png')
+                figure_data = xml_parse(ggb_main_bytes)
+                thumbnail = base64.b64encode(thumbnail_bytes).decode('utf-8')
+                data = {'figure_data': figure_data, 'thumbnail': thumbnail}
 
         flag_data = [True, data]
+        return jsonify(flag_data)
     except Exception as e:
         flag_data = [False, str(e)]
-    return jsonify(flag_data)
+        return jsonify(flag_data)
 
 
 # 5. 运行应用（调试模式仅用于开发）

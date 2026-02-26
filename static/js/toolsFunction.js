@@ -323,7 +323,7 @@ class ToolsFunction {
             y: y0 - unitY * chordHalfLength
         };
         
-        return ToolsFunction.formatIntersections([intersection1, intersection2]);
+        return ToolsFunction.formatIntersections([intersection2, intersection1]);
     }
     
     /**
@@ -1240,5 +1240,110 @@ class ToolsFunction {
         const distance2 = Math.hypot((x4 - x3), (y4 - y3));
         if (Math.abs(distance1 - distance2) > 1e-10) return false;
         return true;
+    }
+
+    /**
+     * 获取排除点
+     * @param {[Object, Object]} param0 
+     * @returns {[boolean, Set<Object>]}
+     */
+    static excludePoint([element1, element2]) {
+        const element1Super = element1.getSuperstructure();
+        const element1SuperSet = new Set();
+        for (const element1SuperElement of element1Super) {
+            const flag = ToolsFunction.excludeVerify(element1SuperElement);
+            if (flag) element1SuperSet.add(element1SuperElement);
+        }
+        const element1Define = element1.getDefine();
+        const element1DefineSet = new Set();
+        for (const element1DefineElement of element1Define) {
+            const flag = ToolsFunction.excludeVerify(element1DefineElement);
+            if (flag) element1SuperSet.add(element1DefineElement);
+        }
+        const element2Super = element2.getSuperstructure();
+        const element2SuperSet = new Set();
+        for (const element2SuperElement of element2Super) {
+            const flag = ToolsFunction.excludeVerify(element2SuperElement);
+            if (flag) element1SuperSet.add(element2SuperElement);
+        }
+        const element2Define = element2.getDefine();
+        const element2DefineSet = new Set();
+        for (const element2DefineElement of element2Define) {
+            const flag = ToolsFunction.excludeVerify(element2DefineElement);
+            if (flag) element1SuperSet.add(element2DefineElement);
+        }
+        const element1Set = element1SuperSet.union(element1DefineSet);
+        const element2Set = element2SuperSet.union(element2DefineSet);
+        const element12UnionSet = element1Set.intersection(element2Set);
+        if (element12UnionSet.size !== 0) {
+            return [true, element12UnionSet];
+        }else{
+            return [false, element12UnionSet];
+        }
+    }
+
+    /**
+     * 排除点验证
+     * @param {{getType(): string, getBase(): {type: string}, getValid(): boolean, getVisible(): boolean}} element 
+     * @returns {boolean}
+     */
+    static excludeVerify(element) {
+        const type = element.getType();
+        const base = element.getBase();
+        const baseType = base.type;
+        const valid = element.getValid();
+        const visible = element.getVisible();
+        if (type === 'point' && baseType === 'intersection' && valid && visible) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * 几何对象线上点
+     * @param {{getCoordinate(): [[number, number], [number, number]]}} line 
+     * @param {[number, number]} point 
+     * @returns {number}
+     */
+    static nearPointOnLineElement(line, point) {
+        const [[x1, y1], [x2, y2]] = line.getCoordinate();
+        const p1 = {x: x1, y: y1};
+        const p2 = {x: x2, y: y2};
+        const [x3, y3] = point;
+        const p3 = {x: x3, y: y3};
+        const value = ToolsFunction.nearPointOnLine(p1, p2, p3);
+        return value;
+    }
+
+    /**
+     * 几何对象圆上点
+     * @param {{getCoordinate(): [[number, number], [number, number]]}} circle 
+     * @param {[number, number]} point 
+     * @returns {number}
+     */
+    static nearPointOnCircleElement(circle, point) {
+        const [[x1, y1], [x2, y2]] = circle.getCoordinate();
+        const p1 = {x: x1, y: y1};
+        const [x3, y3] = point;
+        const p3 = {x: x3, y: y3};
+        const value = ToolsFunction.nearPointOnCircle(p1, p3);
+        return value;
+    }
+
+    /**
+     * 字符串截取类似数组的部分
+     * @param {string} str 
+     * @returns {string[]}
+     */
+    static stringArraySplit(str) {
+        // 1. 定位方括号位置
+        const start = str.indexOf("[") + 1;
+        const end = str.lastIndexOf("]");
+        const innerContent = str.substring(start, end);
+
+        // 2. 分割并处理元素
+        const list = innerContent.split(",").map(item => item.trim());
+        return list;
     }
 }

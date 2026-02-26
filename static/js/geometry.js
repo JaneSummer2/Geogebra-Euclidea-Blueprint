@@ -346,7 +346,6 @@ class Line extends GeometryElement {
             this.base.figure.forEach((item) => basesId.push(item.getId()));
             dict.base.basesId = basesId;
             dict.base.value = this.base.value;
-            dict.base.exclude = this.base.exclude;
         }
         dict.drawType = this.drawType;
         return dict;
@@ -451,7 +450,6 @@ class Circle extends GeometryElement {
             this.base.figure.forEach((item) => basesId.push(item.getId()));
             dict.base.basesId = basesId;
             dict.base.value = this.base.value;
-            dict.base.exclude = this.base.exclude;
         }
         return dict;
     }

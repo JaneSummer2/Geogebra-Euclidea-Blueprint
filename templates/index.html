@@ -4,6 +4,7 @@
     <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>GeogebraEuclideaBlueprint</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
     <!-- 过渡界面 -->
@@ -237,17 +238,34 @@
                     <div class="file-trans-icon">
                         {{ svg_screenshot() }}
                     </div>
-                    <div class="dropdown-wrapper">
-                        <div class="dropdown-trigger" id="dropdownTriggerFilePartDown">
-                            <span class="placeholder">请选择一项</span>
-                            <span class="icon">▼</span>
+                    <div class="row">
+                        <div class="dropdown-wrapper">
+                            <div class="dropdown-trigger" id="dropdownTriggerFilePartDownType">
+                                <span class="placeholder">请选择一项</span>
+                                <span class="icon">▼</span>
+                            </div>
+                            
+                            <div class="dropdown-menu" id="dropdownMenuFilePartDownType">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </div>
                         </div>
-                        
-                        <div class="dropdown-menu" id="dropdownMenuFilePartDown">
-                            <!-- 选项将通过JavaScript动态生成 -->
+                        <div class="dropdown-wrapper">
+                            <div class="dropdown-trigger" id="dropdownTriggerFilePartDown">
+                                <span class="placeholder">请选择一项</span>
+                                <span class="icon">▼</span>
+                            </div>
+                            
+                            <div class="dropdown-menu" id="dropdownMenuFilePartDown">
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </div>
                         </div>
                     </div>
-                    <p class="file-trans-text">截图导出为<span id="file-part-down-text-type">.png</span>文件格式</p>
+                    <p class="file-trans-text">
+                        <span id="file-part-down-type-text-type">截图</span>
+                        导出为
+                        <span id="file-part-down-text-type">.png</span>
+                        文件格式
+                    </p>
                 </div>
             </div>
         </div>

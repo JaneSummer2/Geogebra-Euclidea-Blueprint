@@ -527,6 +527,17 @@ function selectElementByOverview(event) {
             inputDE.id = `item-${id}-base-value-input`;
             dataItem2.appendChild(inputDE);
 
+            if (elementBase.exclude) {
+                const textNode2 = document.createElement('p');
+                textNode2.textContent = '排除点';
+                dataItem2.appendChild(textNode2);
+
+                const inputDE2 = document.createElement('input');
+                inputDE2.value = elementBase.exclude;
+                inputDE2.id = `item-${id}-base-exclude-input`;
+                dataItem2.appendChild(inputDE2);
+            }
+
             dataItem.appendChild(dataItem2);
         }
         
