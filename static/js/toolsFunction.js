@@ -323,7 +323,7 @@ class ToolsFunction {
             y: y0 - unitY * chordHalfLength
         };
         
-        return ToolsFunction.formatIntersections([intersection2, intersection1]);
+        return ToolsFunction.formatIntersections([intersection1, intersection2]);
     }
     
     /**

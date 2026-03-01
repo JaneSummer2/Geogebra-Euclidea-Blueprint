@@ -10,9 +10,9 @@ The names 'Geogebra' and 'Euclidea' are just references to their functions. Eucl
 ---
 
 # How to operate?
-Need Python Flask library. After installation, run the outermost 'app.py' file and open a browser 127.0.0.1:5000 to run it.
+Need Python Flask, Lark, xmltodict library. After installation, run the outermost 'app.py' file and open a browser 127.0.0.1:5000 to run it.
 
-需要Python Flask库。安装完毕后运行最外边的'app.py'文件，打开浏览器 127.0.0.1:5000 运行
+需要Python Flask, Lark, xmltodict库。安装完毕后运行最外边的'app.py'文件，打开浏览器 127.0.0.1:5000 运行
 
 ---
 

@@ -188,10 +188,17 @@ let goldGoal = [];
 
 
 // movesCounter
-const movesCounter = {
+let movesCounter = {
     e: 0,
     l: 0,
 };
+
+function clearMovesCounter() {
+    movesCounter = {
+        e: 0,
+        l: 0,
+    };
+}
 
 const movesCounterDE = document.getElementById("moves");
 movesCounterDE.textContent = '0L 0E';
@@ -944,15 +951,25 @@ function menuChoice(e) {
         const result = confirm("确认重新开始吗？");
         if (result) {
             clearCanvas();
+
             geometryManagerResult.deleteAll();
             geometryManagerExplore.deleteAll();
             loadGeometryElementsStorage();
-            unsuccess();
-            storageManager.clear();
-            storageManager.append(geometryManager.getAllByOrder());
-            movesStorageManager.clear();
-            movesStorageManager.append({e: 0, l: 0});
+            
+            storageManagerResult.clear();
+            storageManagerExplore.clear();
+            storageManagerResult.append(geometryManager.toStorage());
+            storageManagerExplore.append(geometryManager.toStorage());
             refreshStorageButton();
+
+            clearMovesCounter();
+            movesStorageManagerResult.clear();
+            movesStorageManagerExplore.clear();
+            movesStorageManagerResult.append(movesCounter);
+            movesStorageManagerExplore.append(movesCounter);
+            refreshMovesCounter();
+
+            unsuccess();
         }
     }else if (action === "close-menu") {
         closeMenu();
