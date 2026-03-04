@@ -1298,6 +1298,19 @@ function gmtFileParse(localData) {
                     value: value.ratio};
 
                 createElement(dict);
+            }else if (figureType === 'center') {
+                // 圆心
+                const dict = {};
+                dict.id = name;
+                dict.name = name;
+                dict.type = 'point';
+                dict.x = 0;
+                dict.y = 0;
+                dict.base = {type: 'center', 
+                    basesId: [value.object], 
+                    value: 0};
+
+                createElement(dict);
             }else if (figureType === 'segment') {
                 // 线段
                 const pointIds = value.points;

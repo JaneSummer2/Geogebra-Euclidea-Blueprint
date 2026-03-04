@@ -30,6 +30,7 @@ geometry_grammar = """
                    | parallel
                    | linepoint
                    | midpoint
+                   | center
 
     point: "[" NUMBER "," NUMBER "]"
     segment: "Segment" "[" NAME "," NAME "]"
@@ -45,6 +46,7 @@ geometry_grammar = """
     parallel: "Parallel" "[" NAME "," NAME "]"
     linepoint: "Linepoint" "[" NAME "," NUMBER "]"
     midpoint: "Midpoint" "[" NAME "," NAME "]"
+    center: "CenterPoint" "[" NAME "]"
 
     initial_statement: "initial" "=" name_list
     movepoints_statement: "movepoints" "=" name_list
@@ -166,6 +168,10 @@ class GeometryTransformer(Transformer):
     @v_args(inline=True)
     def midpoint(self, p1, p2):
         return {"type": "midpoint", "object": str(p1), "ratio": str(p2)}
+    
+    @v_args(inline=True)
+    def center(self, c):
+        return {"type": "center", "object": str(c)}
     
     def initial_statement(self, items):
         return {"type": "initial", "objects": items[0]}
